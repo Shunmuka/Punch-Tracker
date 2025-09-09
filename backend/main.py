@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import get_db, create_tables, Session as DBSession, Punch
 from models import SessionCreate, SessionResponse, PunchUpload, PunchResponse, SessionSummary
+from typing import List
 import random
 from datetime import datetime
 
