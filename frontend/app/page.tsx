@@ -59,33 +59,42 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-        <div className="text-neon-cyan text-xl">Loading...</div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="text-2xl font-bold gradient-text">Loading PunchTracker...</div>
+          <div className="text-gray-400 mt-2">Preparing your analytics dashboard</div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-dark-bg">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-neon-cyan mb-2">PunchTracker</h1>
-          <p className="text-gray-400">Boxing Analytics Dashboard</p>
+        <div className="text-center mb-12">
+          <h1 className="text-5xl md:text-6xl font-black gradient-text mb-4 tracking-tight">
+            PunchTracker
+          </h1>
+          <p className="text-xl text-gray-400 font-medium">Professional Boxing Analytics Dashboard</p>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-900/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg mb-6">
-            {error}
+          <div className="bg-red-900/20 border border-red-500 text-red-300 px-6 py-4 rounded-2xl mb-8 backdrop-blur-sm">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+              {error}
+            </div>
           </div>
         )}
 
         {/* Seed Data Button */}
         {sessions.length === 0 && (
-          <div className="text-center mb-8">
+          <div className="text-center mb-12">
             <button
               onClick={seedData}
-              className="bg-neon-cyan text-dark-bg px-6 py-3 rounded-lg font-semibold hover:bg-cyan-400 transition-colors"
+              className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:from-cyan-400 hover:to-purple-400 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl"
             >
               Load Sample Data
             </button>
@@ -93,7 +102,7 @@ export default function Home() {
         )}
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <KPICard
             title="Total Sessions"
             value={sessions.length}
@@ -106,8 +115,8 @@ export default function Home() {
           />
           <KPICard
             title="Avg Speed"
-            value={`${avgSpeed.toFixed(1)} m/s`}
-            subtitle="Across all sessions"
+            value={`${avgSpeed.toFixed(1)}`}
+            subtitle="m/s across sessions"
           />
           <KPICard
             title="Latest Session"
@@ -118,28 +127,54 @@ export default function Home() {
 
         {/* Chart */}
         {sessions.length > 0 && (
-          <SpeedChart data={chartData} />
+          <div className="mb-12">
+            <SpeedChart data={chartData} />
+          </div>
         )}
 
         {/* Sessions List */}
         {sessions.length > 0 && (
-          <div className="card mt-8">
-            <h3 className="text-lg font-semibold mb-4 text-neon-cyan">Recent Sessions</h3>
-            <div className="space-y-2">
-              {sessions.slice(-5).reverse().map((session) => (
-                <div key={session.id} className="flex justify-between items-center py-2 border-b border-gray-700 last:border-b-0">
-                  <div>
-                    <span className="font-medium">Session #{session.id}</span>
-                    <span className="text-gray-400 ml-2">
-                      {new Date(session.created_at).toLocaleDateString()}
-                    </span>
+          <div className="card">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold gradient-text">Recent Sessions</h3>
+              <div className="text-sm text-gray-400">Last 5 sessions</div>
+            </div>
+            <div className="overflow-hidden rounded-xl">
+              <div className="min-w-full">
+                {sessions.slice(-5).reverse().map((session, index) => (
+                  <div key={session.id} className={`session-row flex justify-between items-center py-4 px-6 ${index !== sessions.slice(-5).length - 1 ? 'border-b border-gray-700' : ''}`}>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        #{session.id}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-white">Session #{session.id}</div>
+                        <div className="text-sm text-gray-400">
+                          {new Date(session.created_at).toLocaleDateString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-6">
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-neon-cyan">{session.punch_count}</div>
+                        <div className="text-sm text-gray-400">punches</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-purple-400">{session.avg_speed}</div>
+                        <div className="text-sm text-gray-400">m/s avg</div>
+                      </div>
+                      <button className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        View Details
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-neon-cyan font-semibold">{session.punch_count} punches</div>
-                    <div className="text-sm text-gray-400">{session.avg_speed} m/s avg</div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         )}

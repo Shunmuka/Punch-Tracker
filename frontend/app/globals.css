@@ -12,15 +12,33 @@ body {
 
 @layer components {
   .card {
-    @apply bg-dark-card border border-gray-700 rounded-lg p-4 shadow-lg;
+    @apply bg-dark-card border border-gray-700 rounded-2xl p-6 shadow-xl backdrop-blur-sm;
   }
   
   .kpi-card {
-    @apply card flex flex-col items-center justify-center min-h-[120px] text-center;
+    @apply card flex flex-col items-center justify-center min-h-[140px] text-center transition-all duration-300 hover:scale-105 hover:shadow-2xl cursor-pointer;
+  }
+  
+  .kpi-card:hover {
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.2), 0 0 60px rgba(167, 139, 250, 0.1);
+  }
+  
+  .gradient-text {
+    background: linear-gradient(135deg, #22D3EE 0%, #A78BFA 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   
   .neon-glow {
-    @apply shadow-lg;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+  }
+  
+  .session-row {
+    @apply transition-colors duration-200 hover:bg-gray-800/50;
+  }
+  
+  .session-row:nth-child(even) {
+    @apply bg-gray-800/20;
   }
 }
