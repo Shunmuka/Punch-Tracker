@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0B0F14;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+@layer components {
+  .card {
+    @apply bg-dark-card border border-gray-700 rounded-lg p-4 shadow-lg;
+  }
+  
+  .kpi-card {
+    @apply card flex flex-col items-center justify-center min-h-[120px] text-center;
+  }
+  
+  .neon-glow {
+    @apply shadow-lg;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+  }
+}
