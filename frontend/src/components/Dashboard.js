@@ -318,13 +318,19 @@ function Dashboard() {
                   fontFamily="Inter, system-ui, sans-serif"
                 />
                 <Tooltip 
+                  cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                   contentStyle={{
-                    backgroundColor: chartTheme.recharts.tooltip.backgroundColor,
-                    border: chartTheme.recharts.tooltip.border,
-                    borderRadius: chartTheme.recharts.tooltip.borderRadius,
-                    boxShadow: chartTheme.recharts.tooltip.boxShadow,
-                    color: chartTheme.recharts.tooltip.color
+                    backgroundColor: 'rgba(42, 47, 58, 0.72)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: 12,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.35)',
+                    color: '#CED4DE',
+                    padding: '10px 12px'
                   }}
+                  labelStyle={{ color: '#9AA4AF', fontWeight: 600 }}
+                  itemStyle={{ color: '#CED4DE', opacity: 0.9 }}
+                  formatter={(value) => [`${value}`, 'Count']}
+                  labelFormatter={(label) => label}
                 />
                 <Bar 
                   dataKey="count" 
@@ -356,13 +362,19 @@ function Dashboard() {
                   ))}
                 </Pie>
                 <Tooltip 
+                  cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                   contentStyle={{
-                    backgroundColor: chartTheme.recharts.tooltip.backgroundColor,
-                    border: chartTheme.recharts.tooltip.border,
-                    borderRadius: chartTheme.recharts.tooltip.borderRadius,
-                    boxShadow: chartTheme.recharts.tooltip.boxShadow,
-                    color: chartTheme.recharts.tooltip.color
+                    backgroundColor: 'rgba(42, 47, 58, 0.72)',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    borderRadius: 12,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.35)',
+                    color: '#CED4DE',
+                    padding: '10px 12px'
                   }}
+                  labelStyle={{ color: '#9AA4AF', fontWeight: 600 }}
+                  itemStyle={{ color: '#CED4DE', opacity: 0.9 }}
+                  formatter={(value) => [`${value}`, 'Count']}
+                  labelFormatter={(label) => label}
                 />
               </PieChart>
             </ResponsiveContainer>

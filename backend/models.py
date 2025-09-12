@@ -37,11 +37,41 @@ class Session(Base):
     user = relationship("User", back_populates="sessions")
     punches = relationship("Punch", back_populates="session")
 
+class Workout(Base):
+    __tablename__ = "workouts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(100), nullable=True)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    auto_detected = Column(Boolean, default=False)
+
+    # Relationships
+    user = relationship("User")
+    segments = relationship("WorkoutSegment", back_populates="workout", cascade="all, delete-orphan")
+    punches = relationship("Punch", back_populates="workout")
+
+class WorkoutSegment(Base):
+    __tablename__ = "workout_segments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workout_id = Column(Integer, ForeignKey("workouts.id"), nullable=False)
+    kind = Column(String(20), nullable=False)  # active | rest
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    ended_at = Column(DateTime(timezone=True), nullable=False)
+    target_seconds = Column(Integer, nullable=True)
+
+    # Relationships
+    workout = relationship("Workout", back_populates="segments")
+
 class Punch(Base):
     __tablename__ = "punches"
     
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
+    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=True)
+    workout_id = Column(Integer, ForeignKey("workouts.id"), nullable=True)
+    segment_id = Column(Integer, ForeignKey("workout_segments.id"), nullable=True)
     punch_type = Column(String(20), nullable=False)  # jab, cross, hook, uppercut
     speed = Column(Float, nullable=False)  # mph or m/s
     count = Column(Integer, default=1)
@@ -50,6 +80,7 @@ class Punch(Base):
     
     # Relationships
     session = relationship("Session", back_populates="punches")
+    workout = relationship("Workout", back_populates="punches")
 
 class NotificationPrefs(Base):
     __tablename__ = "notification_prefs"

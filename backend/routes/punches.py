@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db, get_redis
-from models import Punch, Session
+from models import Punch, Session, Workout
+from datetime import datetime, timedelta
+import os
 from schemas import PunchCreate, PunchResponse
 import json
 
@@ -17,9 +19,18 @@ async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
+    # Auto-start workout if none active
+    active_workout = db.query(Workout).filter(Workout.ended_at == None).first()
+    if not active_workout:
+        active_workout = Workout(user_id=session.user_id, started_at=datetime.utcnow(), auto_detected=True)
+        db.add(active_workout)
+        db.commit()
+        db.refresh(active_workout)
+
     # Create punch record
     db_punch = Punch(
         session_id=punch.session_id,
+        workout_id=active_workout.id,
         punch_type=punch.punch_type,
         speed=punch.speed,
         count=punch.count,
@@ -35,6 +46,27 @@ async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_
         await update_session_cache(punch.session_id, db, redis_client)
     except Exception:
         # If Redis is not available, ignore and continue
+        pass
+
+    # Invalidate workout summary cache for this workout (best-effort)
+    try:
+        if redis_client and active_workout:
+            redis_client.delete(f"workout:summary:{active_workout.id}")
+    except Exception:
+        pass
+
+    # Auto-stop workout if inactivity timer passes will be handled lazily: update last punch time
+    try:
+        inactivity_mins = int(os.getenv('INACTIVITY_MINUTES', '3'))
+        # close any workouts for which last punch older than threshold
+        threshold = datetime.utcnow() - timedelta(minutes=inactivity_mins)
+        stale = db.query(Workout).filter(Workout.ended_at == None).all()
+        for w in stale:
+            last = db.query(Punch).filter(Punch.workout_id == w.id).order_by(Punch.timestamp.desc()).first()
+            if last and last.timestamp < threshold:
+                w.ended_at = datetime.utcnow()
+        db.commit()
+    except Exception:
         pass
     
     return db_punch

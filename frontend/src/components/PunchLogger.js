@@ -18,6 +18,9 @@ function PunchLogger() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showSessionModal, setShowSessionModal] = useState(false);
+  const [newSessionName, setNewSessionName] = useState('');
+  const [creatingSession, setCreatingSession] = useState(false);
 
   const punchTypes = [
     { value: 'jab', label: 'Jab', icon: '👊' },
@@ -49,13 +52,17 @@ function PunchLogger() {
     }
   };
 
-  const createNewSession = async () => {
-    const sessionName = prompt('Enter session name:');
-    if (!sessionName) return;
+  const createNewSession = () => {
+    setNewSessionName('');
+    setShowSessionModal(true);
+  };
 
+  const submitNewSession = async () => {
+    if (!newSessionName.trim()) return;
     try {
+      setCreatingSession(true);
       const response = await axios.post(`${API_BASE_URL}/api/sessions`, {
-        name: sessionName
+        name: newSessionName.trim()
       });
       setSessions(prev => [response.data, ...prev]);
       setPunchData(prev => ({
@@ -63,9 +70,13 @@ function PunchLogger() {
         session_id: response.data.id
       }));
       setMessage('New session created!');
+      setShowSessionModal(false);
+      setNewSessionName('');
     } catch (err) {
       console.error('Failed to create session:', err);
       setMessage('Failed to create session');
+    } finally {
+      setCreatingSession(false);
     }
   };
 
@@ -73,7 +84,8 @@ function PunchLogger() {
     const { name, value } = e.target;
     setPunchData(prev => ({
       ...prev,
-      [name]: name === 'speed' || name === 'count' ? parseFloat(value) || 0 : value
+      // Keep numeric inputs as strings while typing so users can clear them
+      [name]: (name === 'speed' || name === 'count') ? value : value
     }));
   };
 
@@ -91,11 +103,23 @@ function PunchLogger() {
       return;
     }
 
+    // Convert numeric strings to numbers with validation
+    const parsedSpeed = punchData.speed === '' ? 0 : parseFloat(punchData.speed);
+    const parsedCount = punchData.count === '' ? 0 : parseInt(punchData.count, 10);
+    if (isNaN(parsedSpeed) || isNaN(parsedCount) || parsedCount < 1) {
+      setMessage('Please enter valid numbers for speed and count');
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage('');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/punches`, punchData);
+      const response = await axios.post(`${API_BASE_URL}/api/punches`, {
+        ...punchData,
+        speed: parsedSpeed,
+        count: parsedCount
+      });
       setMessage('Punch logged successfully!');
       setPunchData(prev => ({
         ...prev,
@@ -226,7 +250,7 @@ function PunchLogger() {
                 Speed (mph)
               </label>
               <input
-                type="number"
+                type="text"
                 id="speed"
                 name="speed"
                 value={punchData.speed}
@@ -234,7 +258,7 @@ function PunchLogger() {
                 min="0"
                 step="0.1"
                 required
-                placeholder="25.5"
+                placeholder="Speed in MPH"
                 className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               />
             </div>
@@ -244,14 +268,14 @@ function PunchLogger() {
                 Count
               </label>
               <input
-                type="number"
+                type="text"
                 id="count"
                 name="count"
                 value={punchData.count}
                 onChange={handleInputChange}
                 min="1"
                 required
-                placeholder="1"
+                placeholder="Number of Punches"
                 className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
               />
             </div>
@@ -294,6 +318,44 @@ function PunchLogger() {
           </button>
         </form>
       </Card>
+
+      {/* Create Session Modal */}
+      {showSessionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowSessionModal(false)}></div>
+          <div className="relative bg-surface2 border border-[#242a35] rounded-2xl shadow-soft w-full max-w-md mx-4 p-6">
+            <h3 className="text-xl font-bold text-text mb-2">New Session</h3>
+            <p className="text-sm text-muted mb-4">Enter a name for your training session.</p>
+            <input
+              type="text"
+              value={newSessionName}
+              onChange={(e) => setNewSessionName(e.target.value)}
+              placeholder="e.g., Morning Drills"
+              className="w-full bg-surface border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 mb-4"
+              autoFocus
+            />
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setShowSessionModal(false)}
+                className="px-4 py-2 rounded-xl text-muted hover:text-text hover:bg-surface transition-all duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitNewSession}
+                disabled={creatingSession || !newSessionName.trim()}
+                className={`px-4 py-2 rounded-xl font-semibold transition-all duration-200 ${
+                  newSessionName.trim() && !creatingSession ? 'bg-primary hover:bg-primary-600 text-white' : 'bg-surface text-muted cursor-not-allowed'
+                }`}
+              >
+                {creatingSession ? 'Creating...' : 'Create Session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Instructions */}
       <Card>

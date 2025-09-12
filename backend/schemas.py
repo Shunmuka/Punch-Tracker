@@ -36,6 +36,33 @@ class PunchCreate(BaseModel):
     count: int = 1
     notes: Optional[str] = None
 
+class WorkoutTemplate(BaseModel):
+    name: str
+    rounds: int
+    round_duration_seconds: int
+    rest_duration_seconds: int
+    description: str
+
+class WorkoutStartRequest(BaseModel):
+    template_name: Optional[str] = None
+
+class WorkoutStartResponse(BaseModel):
+    id: int
+    started_at: datetime
+    template: Optional[WorkoutTemplate] = None
+
+class WorkoutSummary(BaseModel):
+    id: int
+    user_id: int
+    started_at: datetime
+    ended_at: Optional[datetime]
+    total_punches: int
+    average_speed: float
+    duration_seconds: Optional[int]
+    rounds: int
+    rests: int
+    segments: list
+
 class PunchResponse(BaseModel):
     id: int
     session_id: int

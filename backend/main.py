@@ -14,6 +14,7 @@ from database import get_db, engine
 from models import Base, User
 from routes import punches, analytics
 from routes import auth, sessions, notifications, coach, analytics_enhanced
+from routes import workouts
 from notifications import notification_service
 
 # Load environment variables
@@ -47,8 +48,10 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
 app.include_router(sessions.router, prefix="/api", tags=["sessions"])
 app.include_router(punches.router, prefix="/api", tags=["punches"])
-app.include_router(analytics.router, prefix="/api", tags=["analytics"])
+# Register enhanced analytics first so static routes like /analytics/weekly are matched
 app.include_router(analytics_enhanced.router, prefix="/api", tags=["analytics-enhanced"])
+app.include_router(analytics.router, prefix="/api", tags=["analytics"])
+app.include_router(workouts.router, tags=["workouts"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(coach.router, prefix="/api/coach", tags=["coach"])
 
