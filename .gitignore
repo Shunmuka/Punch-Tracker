@@ -34,6 +34,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+backend/.venv/
+infra/.venv/
 
 # IDE
 .vscode/
@@ -52,14 +54,15 @@ ehthumbs.db
 Thumbs.db
 
 # Node.js
-node_modules/
+/frontend/node_modules/
+frontend/devserver.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
 # React build
-/frontend/build
+/frontend/build/
 /frontend/.env.local
 /frontend/.env.development.local
 /frontend/.env.test.local
@@ -68,6 +71,7 @@ lerna-debug.log*
 # Database
 *.db
 *.sqlite3
+backend/punchtracker.sqlite3
 
 # Docker
 docker-compose.override.yml
