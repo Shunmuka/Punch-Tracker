@@ -1,29 +1,74 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [keepLoggedIn, setKeepLoggedIn] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showSignup, setShowSignup] = useState(false);
+  const [signupData, setSignupData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'athlete'
+  });
+  
   const navigate = useNavigate();
+  const { login, signup, user, isAuthenticated } = useAuth();
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    // Mock authentication for MVP
-    if (email.trim() && password.trim()) {
-      setIsLoggedIn(true);
-      localStorage.setItem('user', email);
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (isAuthenticated) {
       navigate('/dashboard');
     }
+  }, [isAuthenticated, navigate]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    const result = await login(email, password);
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    
+    setIsLoading(false);
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem('user');
-    setEmail('');
-    setPassword('');
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    if (signupData.password !== signupData.confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    const result = await signup(
+      signupData.username,
+      signupData.email,
+      signupData.password,
+      signupData.role
+    );
+    
+    if (result.success) {
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    
+    setIsLoading(false);
   };
 
   const handleSocialLogin = (provider) => {
@@ -32,45 +77,38 @@ function Login() {
     alert(`Social login with ${provider} - Coming soon!`);
   };
 
-  // Check if user is already logged in
-  React.useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (user) {
-      setIsLoggedIn(true);
-      setEmail(user);
-    }
-  }, []);
-
-  if (isLoggedIn) {
+  if (isAuthenticated) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4">
-        <div className="bg-card-bg rounded-3xl p-8 max-w-md w-full shadow-card">
+      <div className="min-h-screen bg-bg flex items-center justify-center p-4">
+        <div className="bg-surface rounded-3xl p-8 max-w-md w-full shadow-soft">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-text-primary mb-2">
-              Welcome back, {email.split('@')[0]}!
+            <h1 className="text-3xl font-black text-text mb-2">
+              Welcome back, {user?.username}!
             </h1>
-            <p className="text-text-secondary">Ready to track your punches?</p>
+            <p className="text-muted">Ready to track your punches?</p>
           </div>
           
           <div className="space-y-4">
             <button 
               onClick={() => navigate('/log-punch')}
-              className="w-full bg-punch-red hover:bg-punch-red/90 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 shadow-button"
+              className="w-full bg-primary hover:bg-primary-600 text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-200 shadow-button"
             >
               Log New Punch
             </button>
             <button 
               onClick={() => navigate('/dashboard')}
-              className="w-full bg-input-bg hover:bg-border-gray text-text-primary font-semibold py-4 px-6 rounded-2xl transition-all duration-200"
+              className="w-full bg-surface2 hover:bg-border-gray text-text font-semibold py-4 px-6 rounded-2xl transition-all duration-200"
             >
               View Dashboard
             </button>
-            <button 
-              onClick={handleLogout}
-              className="w-full text-punch-red font-semibold py-2 px-6 rounded-2xl transition-all duration-200 hover:bg-punch-red/10"
-            >
-              Logout
-            </button>
+            {user?.role === 'coach' && (
+              <button 
+                onClick={() => navigate('/coach')}
+                className="w-full bg-surface2 hover:bg-border-gray text-text font-semibold py-4 px-6 rounded-2xl transition-all duration-200"
+              >
+                Coach Dashboard
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -78,118 +116,249 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-bg flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-radial from-punch-red/5 via-transparent to-transparent"></div>
-      <div className="absolute top-20 left-10 w-32 h-32 bg-punch-red/10 rounded-full blur-3xl"></div>
+      <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent"></div>
+      <div className="absolute top-20 left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-40 h-40 bg-punch-orange/10 rounded-full blur-3xl"></div>
       
       {/* Main Login Card */}
-      <div className="bg-card-bg rounded-3xl p-8 max-w-md w-full shadow-card relative z-10">
+      <div className="bg-surface rounded-3xl p-8 max-w-md w-full shadow-soft relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="mb-6">
-            <h1 className="text-4xl font-black text-text-primary mb-2">
-              <span className="text-text-primary">PUNCH</span>
-              <span className="text-punch-red">TRACKER</span>
+            <h1 className="text-4xl font-black text-text mb-2">
+              <span className="text-text">PUNCH</span>
+              <span className="text-primary">TRACKER</span>
             </h1>
           </div>
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Log In</h2>
-          <p className="text-text-secondary text-sm">
-            To log in, please enter your email address and confirm your password.
+          <h2 className="text-2xl font-bold text-text mb-2">
+            {showSignup ? 'Sign Up' : 'Log In'}
+          </h2>
+          <p className="text-muted text-sm">
+            {showSignup 
+              ? 'Create your account to start tracking your training'
+              : 'Enter your email and password to access your dashboard'
+            }
           </p>
         </div>
 
-        {/* Login Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
-          {/* Email Field */}
-          <div>
-            <label htmlFor="email" className="block text-text-primary text-sm font-semibold mb-2">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="demo@punchtracker.com"
-              className="w-full bg-input-bg border border-border-gray text-text-primary placeholder-text-secondary rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-punch-red focus:ring-2 focus:ring-punch-red/20 transition-all duration-200"
-              required
-            />
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <p className="text-red-400 text-sm">{error}</p>
           </div>
+        )}
 
-          {/* Password Field */}
-          <div>
-            <label htmlFor="password" className="block text-text-primary text-sm font-semibold mb-2">
-              Password
-            </label>
-            <div className="relative">
+        {/* Login Form */}
+        {!showSignup ? (
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-text text-sm font-semibold mb-2">
+                Email Address
+              </label>
               <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="password123"
-                className="w-full bg-input-bg border border-border-gray text-text-primary placeholder-text-secondary rounded-2xl px-4 py-4 pr-12 text-sm focus:outline-none focus:border-punch-red focus:ring-2 focus:ring-punch-red/20 transition-all duration-200"
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
                 required
               />
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-text text-sm font-semibold mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 pr-12 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted hover:text-text transition-colors duration-200"
+                >
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Options Row */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={keepLoggedIn}
+                  onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                  className="w-4 h-4 text-primary bg-surface2 border-[#242a35] rounded focus:ring-primary focus:ring-2"
+                />
+                <span className="ml-2 text-muted text-sm">Keep me logged in</span>
+              </label>
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors duration-200"
+                className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors duration-200"
               >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                Forgot Password?
               </button>
             </div>
-          </div>
 
-          {/* Options Row */}
-          <div className="flex items-center justify-between">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={keepLoggedIn}
-                onChange={(e) => setKeepLoggedIn(e.target.checked)}
-                className="w-4 h-4 text-punch-red bg-input-bg border-border-gray rounded focus:ring-punch-red focus:ring-2"
-              />
-              <span className="ml-2 text-text-secondary text-sm">Keep me logged in</span>
-            </label>
+            {/* Login Button */}
             <button
-              type="button"
-              className="text-punch-red text-sm font-semibold hover:text-punch-red/80 transition-colors duration-200"
+              type="submit"
+              disabled={isLoading || !email || !password}
+              className={`w-full font-bold py-4 px-6 rounded-2xl transition-all duration-200 ${
+                email && password && !isLoading
+                  ? 'bg-primary hover:bg-primary-600 text-white shadow-button'
+                  : 'bg-surface2 text-muted cursor-not-allowed'
+              }`}
             >
-              Forgot Password?
+              {isLoading ? 'Logging in...' : 'Log In'}
             </button>
-          </div>
+          </form>
+        ) : (
+          /* Signup Form */
+          <form onSubmit={handleSignup} className="space-y-6">
+            {/* Username Field */}
+            <div>
+              <label htmlFor="signup-username" className="block text-text text-sm font-semibold mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                id="signup-username"
+                value={signupData.username}
+                onChange={(e) => setSignupData({...signupData, username: e.target.value})}
+                placeholder="Choose a username"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                required
+              />
+            </div>
 
-          {/* Login Button */}
-          <button
-            type="submit"
-            className={`w-full font-bold py-4 px-6 rounded-2xl transition-all duration-200 ${
-              email && password
-                ? 'bg-punch-red hover:bg-punch-red/90 text-white shadow-button'
-                : 'bg-input-bg text-text-secondary cursor-not-allowed'
-            }`}
-            disabled={!email || !password}
-          >
-            Log In
-          </button>
-        </form>
+            {/* Email Field */}
+            <div>
+              <label htmlFor="signup-email" className="block text-text text-sm font-semibold mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="signup-email"
+                value={signupData.email}
+                onChange={(e) => setSignupData({...signupData, email: e.target.value})}
+                placeholder="Enter your email"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                required
+              />
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="signup-password" className="block text-text text-sm font-semibold mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                id="signup-password"
+                value={signupData.password}
+                onChange={(e) => setSignupData({...signupData, password: e.target.value})}
+                placeholder="Create a password"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                required
+              />
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="signup-confirm-password" className="block text-text text-sm font-semibold mb-2">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="signup-confirm-password"
+                value={signupData.confirmPassword}
+                onChange={(e) => setSignupData({...signupData, confirmPassword: e.target.value})}
+                placeholder="Confirm your password"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-2xl px-4 py-4 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+                required
+              />
+            </div>
+
+            {/* Role Selection */}
+            <div>
+              <label className="block text-text text-sm font-semibold mb-2">
+                Role
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setSignupData({...signupData, role: 'athlete'})}
+                  className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
+                    signupData.role === 'athlete'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-[#242a35] bg-surface2 text-muted hover:border-primary/50'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">🥊</div>
+                    <div className="font-semibold">Athlete</div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSignupData({...signupData, role: 'coach'})}
+                  className={`p-4 rounded-2xl border-2 transition-all duration-200 ${
+                    signupData.role === 'coach'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-[#242a35] bg-surface2 text-muted hover:border-primary/50'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-2xl mb-2">👨‍🏫</div>
+                    <div className="font-semibold">Coach</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Signup Button */}
+            <button
+              type="submit"
+              disabled={isLoading || !signupData.username || !signupData.email || !signupData.password}
+              className={`w-full font-bold py-4 px-6 rounded-2xl transition-all duration-200 ${
+                signupData.username && signupData.email && signupData.password && !isLoading
+                  ? 'bg-primary hover:bg-primary-600 text-white shadow-button'
+                  : 'bg-surface2 text-muted cursor-not-allowed'
+              }`}
+            >
+              {isLoading ? 'Creating Account...' : 'Sign Up'}
+            </button>
+          </form>
+        )}
 
         {/* Divider */}
         <div className="flex items-center my-8">
-          <div className="flex-1 border-t border-border-gray"></div>
-          <span className="px-4 text-text-secondary text-sm">or</span>
-          <div className="flex-1 border-t border-border-gray"></div>
+          <div className="flex-1 border-t border-[#242a35]"></div>
+          <span className="px-4 text-muted text-sm">or</span>
+          <div className="flex-1 border-t border-[#242a35]"></div>
         </div>
 
         {/* Social Login Buttons */}
@@ -225,28 +394,17 @@ function Login() {
           </button>
         </div>
 
-        {/* Sign Up Link */}
+        {/* Toggle Signup/Login */}
         <div className="text-center">
-          <span className="text-text-secondary text-sm">
-            Don't you have an account?{' '}
+          <span className="text-muted text-sm">
+            {showSignup ? 'Already have an account? ' : "Don't have an account? "}
           </span>
-          <button className="text-punch-red text-sm font-semibold hover:text-punch-red/80 transition-colors duration-200">
-            Sign Up
+          <button 
+            onClick={() => setShowSignup(!showSignup)}
+            className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors duration-200"
+          >
+            {showSignup ? 'Log In' : 'Sign Up'}
           </button>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-input-bg/50 rounded-2xl border border-border-gray">
-          <h4 className="text-text-primary text-sm font-semibold mb-2">Demo Credentials:</h4>
-          <p className="text-text-secondary text-xs mb-1">
-            Email: <span className="text-punch-red font-mono">demo@punchtracker.com</span>
-          </p>
-          <p className="text-text-secondary text-xs mb-1">
-            Password: <span className="text-punch-red font-mono">password123</span>
-          </p>
-          <p className="text-text-secondary text-xs">
-            This is a mock login for the MVP. In production, this would integrate with a real authentication system.
-          </p>
         </div>
       </div>
     </div>

@@ -1,7 +1,12 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+import enum
 from database import Base
+
+class UserRole(str, enum.Enum):
+    ATHLETE = "athlete"
+    COACH = "coach"
 
 class User(Base):
     __tablename__ = "users"
@@ -9,10 +14,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(Enum(UserRole), nullable=False, default=UserRole.ATHLETE)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     sessions = relationship("Session", back_populates="user")
+    notification_prefs = relationship("NotificationPrefs", back_populates="user", uselist=False)
+    coach_relationships = relationship("CoachAthlete", foreign_keys="CoachAthlete.coach_id", back_populates="coach")
+    athlete_relationships = relationship("CoachAthlete", foreign_keys="CoachAthlete.athlete_id", back_populates="athlete")
 
 class Session(Base):
     __tablename__ = "sessions"
@@ -40,3 +50,34 @@ class Punch(Base):
     
     # Relationships
     session = relationship("Session", back_populates="punches")
+
+class NotificationPrefs(Base):
+    __tablename__ = "notification_prefs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    email_enabled = Column(Boolean, default=True)
+    webhook_enabled = Column(Boolean, default=False)
+    webhook_url = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="notification_prefs")
+
+class CoachAthlete(Base):
+    __tablename__ = "coach_athlete"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    athlete_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    coach = relationship("User", foreign_keys=[coach_id], back_populates="coach_relationships")
+    athlete = relationship("User", foreign_keys=[athlete_id], back_populates="athlete_relationships")
+    
+    # Ensure unique coach-athlete relationship
+    __table_args__ = (
+        {"extend_existing": True}
+    )

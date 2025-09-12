@@ -4,24 +4,46 @@ import axios from 'axios';
 import Card from './ui/Card';
 import Metric from './ui/Metric';
 import { chartTheme } from './charts/Theme';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function Dashboard() {
+  const { user } = useAuth();
   const [analytics, setAnalytics] = useState(null);
+  const [weeklyAnalytics, setWeeklyAnalytics] = useState(null);
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState(1);
 
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      setError('Please login first to view dashboard');
-      setLoading(false);
-      return;
-    }
+    fetchSessions();
+    fetchWeeklyAnalytics();
     fetchAnalytics();
-  }, [sessionId]);
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/sessions?limit=20`);
+      setSessions(response.data.sessions);
+    } catch (err) {
+      console.error('Failed to fetch sessions:', err);
+    }
+  };
+
+  const fetchWeeklyAnalytics = async () => {
+    setWeeklyLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/analytics/weekly`);
+      setWeeklyAnalytics(response.data);
+    } catch (err) {
+      console.error('Failed to fetch weekly analytics:', err);
+    } finally {
+      setWeeklyLoading(false);
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -121,17 +143,20 @@ function Dashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <label htmlFor="sessionSelect" className="text-sm font-medium text-muted">
-              Session ID:
+              Session:
             </label>
-            <input
-              type="number"
+            <select
               id="sessionSelect"
               value={sessionId}
               onChange={handleSessionChange}
-              min="1"
-              placeholder="Enter session ID"
-              className="bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 w-32"
-            />
+              className="bg-surface2 border border-[#242a35] text-text rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 min-w-48"
+            >
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name} ({new Date(session.started_at).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
             <button 
               onClick={fetchAnalytics}
               className="bg-primary hover:bg-primary-600 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200"
@@ -141,6 +166,87 @@ function Dashboard() {
           </div>
         </div>
       </Card>
+
+      {/* Weekly Analytics Section */}
+      {weeklyAnalytics && (
+        <div className="space-y-6">
+          <h3 className="text-xl font-bold text-text">Weekly Progress</h3>
+          
+          {/* Weekly Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Metric
+              label="This Week vs Last Week"
+              value={`${weeklyAnalytics.delta_percent > 0 ? '+' : ''}${weeklyAnalytics.delta_percent}%`}
+              accent="primary"
+              icon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              }
+            />
+            
+            <Metric
+              label="This Week Punches"
+              value={weeklyAnalytics.this_week.total_punches}
+              accent="primary"
+              icon="🥊"
+            />
+            
+            <Metric
+              label="Streak"
+              value="7 days"
+              accent="primary"
+              icon="🔥"
+            />
+            
+            <Metric
+              label="Fatigue (beta)"
+              value={weeklyAnalytics.fatigue_proxy ? `${weeklyAnalytics.fatigue_proxy.toFixed(2)}` : 'N/A'}
+              accent="primary"
+              icon="⚡"
+            />
+          </div>
+
+          {/* Weekly Sparkline */}
+          <Card title="4-Week Trend" subtitle="Punch count over the last 4 weeks">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={weeklyAnalytics.sparkline_data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.colors.grid} />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke={chartTheme.colors.muted}
+                    fontSize={11}
+                    fontFamily="Inter, system-ui, sans-serif"
+                  />
+                  <YAxis 
+                    stroke={chartTheme.colors.muted}
+                    fontSize={11}
+                    fontFamily="Inter, system-ui, sans-serif"
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: chartTheme.recharts.tooltip.backgroundColor,
+                      border: chartTheme.recharts.tooltip.border,
+                      borderRadius: chartTheme.recharts.tooltip.borderRadius,
+                      boxShadow: chartTheme.recharts.tooltip.boxShadow,
+                      color: chartTheme.recharts.tooltip.color
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="total_punches" 
+                    stroke={chartTheme.colors.primary} 
+                    strokeWidth={3}
+                    dot={{ fill: chartTheme.colors.primary, strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: chartTheme.colors.primary, strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

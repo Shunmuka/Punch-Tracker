@@ -7,10 +7,39 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database configuration
-DATABASE_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
+# Database configuration with SQLite fallback for local dev without Docker
+postgres_user = os.getenv('POSTGRES_USER')
+postgres_password = os.getenv('POSTGRES_PASSWORD')
+postgres_host = os.getenv('POSTGRES_HOST')
+postgres_port = os.getenv('POSTGRES_PORT')
+postgres_db = os.getenv('POSTGRES_DB')
 
-engine = create_engine(DATABASE_URL)
+DATABASE_URL = None
+
+def _make_sqlite_url() -> str:
+    sqlite_path = os.path.join(os.path.dirname(__file__), 'punchtracker.sqlite3')
+    return f"sqlite:///{sqlite_path}"
+
+engine = None
+
+if all([postgres_user, postgres_password, postgres_host, postgres_port, postgres_db]):
+    # Try Postgres first
+    pg_url = f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
+    try:
+        tmp_engine = create_engine(pg_url)
+        # Probe connection; if it fails, fall back to SQLite
+        with tmp_engine.connect() as _:
+            pass
+        DATABASE_URL = pg_url
+        engine = tmp_engine
+    except Exception:
+        # Fall back to SQLite
+        DATABASE_URL = _make_sqlite_url()
+        engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    # Use SQLite by default when Postgres env is incomplete
+    DATABASE_URL = _make_sqlite_url()
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

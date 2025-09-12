@@ -12,17 +12,24 @@ router = APIRouter()
 async def get_session_analytics(session_id: int, db: Session = Depends(get_db), redis_client = Depends(get_redis)):
     """Get analytics for a specific session"""
     
-    # Check Redis cache first
-    cached_stats = redis_client.get(f"session_stats:{session_id}")
+    # Check Redis cache first (best-effort)
+    try:
+        cached_stats = redis_client.get(f"session_stats:{session_id}")
+    except Exception:
+        cached_stats = None
     if cached_stats:
-        stats = json.loads(cached_stats)
-        return SessionAnalytics(
-            session_id=session_id,
-            total_punches=stats["total_punches"],
-            average_speed=stats["average_speed"],
-            punch_types=stats["punch_types"],
-            ml_classification=await get_ml_classification(session_id)  # TODO: Future ML integration
-        )
+        try:
+            stats = json.loads(cached_stats)
+            return SessionAnalytics(
+                session_id=session_id,
+                total_punches=stats["total_punches"],
+                average_speed=stats["average_speed"],
+                punch_types=stats["punch_types"],
+                ml_classification=await get_ml_classification(session_id)  # TODO: Future ML integration
+            )
+        except Exception:
+            # fall through to DB calculation if cache malformed
+            pass
     
     # Verify session exists
     session = db.query(Session).filter(Session.id == session_id).first()

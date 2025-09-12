@@ -42,6 +42,15 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret-key-here}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-1440}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-your-sendgrid-api-key-here}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@punchtracker.com}
+      - FROM_NAME=${FROM_NAME:-PunchTracker}
+      - REPORT_SCHEDULE_CRON=${REPORT_SCHEDULE_CRON:-0 8 * * 1}
+      - SLACK_WEBHOOK_DEFAULT=${SLACK_WEBHOOK_DEFAULT:-https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK}
+      - DISCORD_WEBHOOK_DEFAULT=${DISCORD_WEBHOOK_DEFAULT:-https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK}
     depends_on:
       postgres:
         condition: service_healthy

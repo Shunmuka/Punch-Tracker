@@ -30,8 +30,12 @@ async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_
     db.commit()
     db.refresh(db_punch)
     
-    # Update Redis cache with latest session stats
-    await update_session_cache(punch.session_id, db, redis_client)
+    # Update Redis cache with latest session stats (best-effort)
+    try:
+        await update_session_cache(punch.session_id, db, redis_client)
+    except Exception:
+        # If Redis is not available, ignore and continue
+        pass
     
     return db_punch
 
@@ -64,9 +68,13 @@ async def update_session_cache(session_id: int, db: Session, redis_client):
             "last_updated": punches[-1].timestamp.isoformat()
         }
         
-        # Cache for 1 hour
-        redis_client.setex(
-            f"session_stats:{session_id}", 
-            3600, 
-            json.dumps(session_stats)
-        )
+        # Cache for 1 hour (best-effort)
+        try:
+            redis_client.setex(
+                f"session_stats:{session_id}", 
+                3600, 
+                json.dumps(session_stats)
+            )
+        except Exception:
+            # Redis unavailable; skip caching
+            pass

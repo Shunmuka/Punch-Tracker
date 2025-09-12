@@ -3,8 +3,14 @@ ML Service stub for PunchTracker
 TODO: Future milestone - Implement actual ML models for punch classification and fatigue detection
 """
 
-import torch
-import numpy as np
+try:
+    import torch  # type: ignore
+except Exception:  # pragma: no cover - optional in local dev
+    torch = None  # type: ignore
+try:
+    import numpy as np  # noqa: F401
+except Exception:  # pragma: no cover
+    np = None  # type: ignore
 from typing import Dict, List, Optional
 
 class PunchMLService:
@@ -14,7 +20,10 @@ class PunchMLService:
     """
     
     def __init__(self):
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch:
+            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        else:
+            self.device = 'cpu'
         # TODO: Load actual trained models here
         self.punch_classifier = None
         self.fatigue_detector = None

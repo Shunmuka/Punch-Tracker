@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Card from './ui/Card';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function PunchLogger() {
+  const { user } = useAuth();
   const [punchData, setPunchData] = useState({
-    session_id: 1,
+    session_id: '',
     punch_type: '',
     speed: '',
     count: 1,
     notes: ''
   });
+  const [sessions, setSessions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
-  const [currentSession, setCurrentSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const punchTypes = [
     { value: 'jab', label: 'Jab', icon: '👊' },
@@ -24,13 +27,47 @@ function PunchLogger() {
   ];
 
   useEffect(() => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      setMessage('Please login first');
-      return;
-    }
-    setCurrentSession({ id: 1, name: 'Current Training Session' });
+    fetchSessions();
   }, []);
+
+  const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_BASE_URL}/api/sessions?limit=50`);
+      setSessions(response.data.sessions);
+      if (response.data.sessions.length > 0) {
+        setPunchData(prev => ({
+          ...prev,
+          session_id: response.data.sessions[0].id
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch sessions:', err);
+      setMessage('Failed to load sessions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createNewSession = async () => {
+    const sessionName = prompt('Enter session name:');
+    if (!sessionName) return;
+
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/sessions`, {
+        name: sessionName
+      });
+      setSessions(prev => [response.data, ...prev]);
+      setPunchData(prev => ({
+        ...prev,
+        session_id: response.data.id
+      }));
+      setMessage('New session created!');
+    } catch (err) {
+      console.error('Failed to create session:', err);
+      setMessage('Failed to create session');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,19 +86,24 @@ function PunchLogger() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!punchData.session_id) {
+      setMessage('Please select a session');
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage('');
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/punches`, punchData);
       setMessage('Punch logged successfully!');
-      setPunchData({
-        session_id: 1,
+      setPunchData(prev => ({
+        ...prev,
         punch_type: '',
         speed: '',
         count: 1,
         notes: ''
-      });
+      }));
     } catch (error) {
       console.error('Error logging punch:', error);
       setMessage(`Error: ${error.response?.data?.detail || 'Failed to log punch'}`);
@@ -70,18 +112,15 @@ function PunchLogger() {
     }
   };
 
-  if (!currentSession) {
+  if (loading) {
     return (
       <div className="space-y-6">
         <Card>
-          <div className="text-center py-8">
-            <div className="text-red-400 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted">Loading sessions...</p>
             </div>
-            <h3 className="text-xl font-bold text-text mb-2">Login Required</h3>
-            <p className="text-muted">Please login first to log punches.</p>
           </div>
         </Card>
       </div>
@@ -93,10 +132,41 @@ function PunchLogger() {
       {/* Header Card */}
       <Card>
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-text mb-2">Log Punch Session</h2>
-          <p className="text-muted">
-            Current Session: <span className="text-primary font-semibold">{currentSession.name}</span> (ID: {currentSession.id})
-          </p>
+          <h2 className="text-3xl font-bold text-text mb-4">Log Punch Session</h2>
+          
+          {/* Session Selection */}
+          <div className="flex items-center justify-center space-x-4 mb-4">
+            <label htmlFor="sessionSelect" className="text-sm font-medium text-muted">
+              Select Session:
+            </label>
+            <select
+              id="sessionSelect"
+              value={punchData.session_id}
+              onChange={(e) => setPunchData(prev => ({ ...prev, session_id: parseInt(e.target.value) }))}
+              className="bg-surface2 border border-[#242a35] text-text rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 min-w-48"
+            >
+              <option value="">Select a session</option>
+              {sessions.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {session.name} ({new Date(session.started_at).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={createNewSession}
+              className="bg-primary hover:bg-primary-600 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200"
+            >
+              New Session
+            </button>
+          </div>
+          
+          {punchData.session_id && (
+            <p className="text-muted">
+              Selected: <span className="text-primary font-semibold">
+                {sessions.find(s => s.id === punchData.session_id)?.name}
+              </span>
+            </p>
+          )}
         </div>
       </Card>
 
@@ -206,9 +276,9 @@ function PunchLogger() {
           {/* Submit Button */}
           <button 
             type="submit" 
-            disabled={isSubmitting || !punchData.punch_type}
+            disabled={isSubmitting || !punchData.punch_type || !punchData.session_id}
             className={`w-full font-bold py-4 px-6 rounded-2xl transition-all duration-200 ${
-              punchData.punch_type && !isSubmitting
+              punchData.punch_type && punchData.session_id && !isSubmitting
                 ? 'bg-primary hover:bg-primary-600 text-white shadow-button'
                 : 'bg-surface2 text-muted cursor-not-allowed'
             }`}
