@@ -1,35 +1,27 @@
-from sqlalchemy import create_engine, Column, Integer, Float, DateTime, ForeignKey
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from sqlalchemy.orm import sessionmaker
+import redis
 import os
+from dotenv import load_dotenv
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://punchtracker:password@localhost:5432/punchtracker")
+load_dotenv()
+
+# Database configuration
+DATABASE_URL = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-class Session(Base):
-    __tablename__ = "sessions"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    punches = relationship("Punch", back_populates="session")
-
-class Punch(Base):
-    __tablename__ = "punches"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("sessions.id"))
-    speed_mps = Column(Float, nullable=False)
-    
-    session = relationship("Session", back_populates="punches")
-
-def create_tables():
-    Base.metadata.create_all(bind=engine)
+# Redis configuration
+redis_client = redis.Redis(
+    host=os.getenv('REDIS_HOST', 'localhost'),
+    port=int(os.getenv('REDIS_PORT', 6379)),
+    password=os.getenv('REDIS_PASSWORD') or None,
+    decode_responses=True
+)
 
 def get_db():
     db = SessionLocal()
@@ -37,3 +29,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_redis():
+    return redis_client

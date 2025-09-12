@@ -1,71 +1,92 @@
-# PunchTracker - Minimal Boxing Analytics
+# PunchTracker MVP
 
-A minimal, dark-themed boxing analytics platform built with Next.js and FastAPI.
-
-## Features
-
-- **Dark Theme**: Black/gray background with neon cyan accents
-- **Mobile-First**: Responsive design optimized for mobile devices
-- **KPI Dashboard**: Punch count, average speed, and session tracking
-- **Time-Series Chart**: Visual representation of speed over time
-- **Real-time Data**: Live updates from PostgreSQL database
+A minimal vertical-slice MVP for tracking boxing punch sessions with basic analytics.
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, TypeScript, TailwindCSS, Recharts
-- **Backend**: FastAPI, SQLAlchemy, PostgreSQL
-- **Infrastructure**: Docker Compose
+- **Backend**: FastAPI (Python), REST APIs
+- **Frontend**: React, Recharts (basic charts)
+- **Database**: PostgreSQL + Redis (for caching/session)
+- **Infra**: Docker, Docker Compose, GitHub Actions for CI
+- **Observability**: Basic Prometheus metrics endpoint, simple Grafana dashboard placeholder
+- **ML/Analytics**: PyTorch service skeleton + placeholder model
+- **Testing**: PyTest (backend), Jest (frontend)
 
 ## Quick Start
 
-1. **Clone and start services**:
+1. **Clone and setup**:
    ```bash
-   git clone https://github.com/Shunmuka/Punch-Tracker.git
-   cd Punch-Tracker
-   docker-compose up
+   git clone <repo-url>
+   cd PunchTracker
+   cp .env.example .env
    ```
 
-2. **Access the application**:
+2. **Start all services**:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Seed initial data**:
+   ```bash
+   docker-compose exec backend python seed_data.py
+   ```
+
+4. **Access the application**:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
-
-3. **Load sample data**:
-   - Click "Load Sample Data" button on the homepage
-   - This creates a session with 50 random punches
-
-## API Endpoints
-
-- `POST /sessions` - Create a new session
-- `POST /sessions/{id}/punches` - Upload punches to a session
-- `GET /sessions/{id}/summary` - Get session summary
-- `GET /sessions` - Get all sessions
-- `POST /seed` - Seed database with sample data
-
-## Database Schema
-
-- **sessions**: id, created_at
-- **punches**: id, session_id (FK), speed_mps
+   - Grafana: http://localhost:3001 (admin/admin)
+   - Prometheus: http://localhost:9090
 
 ## Development
 
+### Backend Development
 ```bash
-# Backend only
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
-
-# Frontend only
-cd frontend
-npm install
-npm run dev
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Screenshots
+### Frontend Development
+```bash
+cd frontend
+npm install
+npm start
+```
 
-*Screenshots will be added after implementation*
+### Database Setup
+```bash
+# Create database
+docker-compose exec postgres createdb -U postgres punchtracker
 
-- Dark theme home dashboard
-- KPI cards with neon cyan accents
-- Speed over time chart
-- Mobile-responsive design
+# Run migrations (if any)
+docker-compose exec backend alembic upgrade head
+```
+
+## API Endpoints
+
+- `POST /api/punches` - Log punch data
+- `GET /api/analytics/:sessionId` - Get session analytics
+- `GET /metrics` - Prometheus metrics
+
+## Testing
+
+```bash
+# Backend tests
+cd backend && python -m pytest
+
+# Frontend tests
+cd frontend && npm test
+```
+
+## Project Structure
+
+```
+/punchtracker
+  /backend (FastAPI app: routes, models, services, tests)
+  /frontend (React app: pages, components, charts, tests)
+  /infra (docker-compose.yml, prometheus.yml, grafana dashboards)
+  .env.example
+  README.md
+  .github/workflows/ci.yml
+```
