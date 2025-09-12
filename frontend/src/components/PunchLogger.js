@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Card from './ui/Card';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function PunchLogger() {
   const [punchData, setPunchData] = useState({
-    session_id: 1, // Default to session 1 for MVP
+    session_id: 1,
     punch_type: '',
     speed: '',
     count: 1,
@@ -16,21 +17,18 @@ function PunchLogger() {
   const [currentSession, setCurrentSession] = useState(null);
 
   const punchTypes = [
-    { value: 'jab', label: 'Jab' },
-    { value: 'cross', label: 'Cross' },
-    { value: 'hook', label: 'Hook' },
-    { value: 'uppercut', label: 'Uppercut' }
+    { value: 'jab', label: 'Jab', icon: '👊' },
+    { value: 'cross', label: 'Cross', icon: '🥊' },
+    { value: 'hook', label: 'Hook', icon: '💥' },
+    { value: 'uppercut', label: 'Uppercut', icon: '⚡' }
   ];
 
   useEffect(() => {
-    // Check if user is logged in
     const user = localStorage.getItem('user');
     if (!user) {
       setMessage('Please login first');
       return;
     }
-
-    // For MVP, we'll use session ID 1
     setCurrentSession({ id: 1, name: 'Current Training Session' });
   }, []);
 
@@ -56,10 +54,7 @@ function PunchLogger() {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/punches`, punchData);
-      
       setMessage('Punch logged successfully!');
-      
-      // Reset form
       setPunchData({
         session_id: 1,
         punch_type: '',
@@ -67,7 +62,6 @@ function PunchLogger() {
         count: 1,
         notes: ''
       });
-      
     } catch (error) {
       console.error('Error logging punch:', error);
       setMessage(`Error: ${error.response?.data?.detail || 'Failed to log punch'}`);
@@ -78,101 +72,183 @@ function PunchLogger() {
 
   if (!currentSession) {
     return (
-      <div className="card">
-        <h2>Log Punch Session</h2>
-        <div className="alert alert-error">
-          Please login first to log punches.
-        </div>
+      <div className="space-y-6">
+        <Card>
+          <div className="text-center py-8">
+            <div className="text-red-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-text mb-2">Login Required</h3>
+            <p className="text-muted">Please login first to log punches.</p>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="card">
-      <h2>Log Punch Session</h2>
-      <p>Current Session: <strong>{currentSession.name}</strong> (ID: {currentSession.id})</p>
-      
-      {message && (
-        <div className={`alert ${message.includes('Error') ? 'alert-error' : 'alert-success'}`}>
-          {message}
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header Card */}
+      <Card>
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-text mb-2">Log Punch Session</h2>
+          <p className="text-muted">
+            Current Session: <span className="text-primary font-semibold">{currentSession.name}</span> (ID: {currentSession.id})
+          </p>
         </div>
+      </Card>
+
+      {/* Message Alert */}
+      {message && (
+        <Card>
+          <div className={`flex items-center space-x-3 ${
+            message.includes('Error') ? 'text-red-400' : 'text-green-400'
+          }`}>
+            <div className="flex-shrink-0">
+              {message.includes('Error') ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <p className="font-medium">{message}</p>
+          </div>
+        </Card>
       )}
 
-      <form onSubmit={handleSubmit} className="punch-form">
-        <div className="form-group">
-          <label>Punch Type:</label>
-          <div className="punch-type-grid">
-            {punchTypes.map(type => (
-              <button
-                key={type.value}
-                type="button"
-                className={`punch-type-btn ${punchData.punch_type === type.value ? 'selected' : ''}`}
-                onClick={() => handlePunchTypeSelect(type.value)}
-              >
-                {type.label}
-              </button>
-            ))}
+      {/* Punch Form */}
+      <Card title="Punch Details" subtitle="Record your training data">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Punch Type Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-text mb-4">Punch Type</label>
+            <div className="grid grid-cols-2 gap-4">
+              {punchTypes.map(type => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => handlePunchTypeSelect(type.value)}
+                  className={`p-6 rounded-2xl border-2 transition-all duration-200 ${
+                    punchData.punch_type === type.value
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-[#242a35] bg-surface2 text-muted hover:border-primary/50 hover:text-text'
+                  }`}
+                >
+                  <div className="text-center">
+                    <div className="text-3xl mb-2">{type.icon}</div>
+                    <div className="font-semibold">{type.label}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Speed and Count Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="speed" className="block text-sm font-semibold text-text mb-2">
+                Speed (mph)
+              </label>
+              <input
+                type="number"
+                id="speed"
+                name="speed"
+                value={punchData.speed}
+                onChange={handleInputChange}
+                min="0"
+                step="0.1"
+                required
+                placeholder="25.5"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="count" className="block text-sm font-semibold text-text mb-2">
+                Count
+              </label>
+              <input
+                type="number"
+                id="count"
+                name="count"
+                value={punchData.count}
+                onChange={handleInputChange}
+                min="1"
+                required
+                placeholder="1"
+                className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200"
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label htmlFor="notes" className="block text-sm font-semibold text-text mb-2">
+              Notes (optional)
+            </label>
+            <textarea
+              id="notes"
+              name="notes"
+              value={punchData.notes}
+              onChange={handleInputChange}
+              rows="3"
+              placeholder="Add any notes about your technique or form..."
+              className="w-full bg-surface2 border border-[#242a35] text-text placeholder-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 resize-none"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button 
+            type="submit" 
+            disabled={isSubmitting || !punchData.punch_type}
+            className={`w-full font-bold py-4 px-6 rounded-2xl transition-all duration-200 ${
+              punchData.punch_type && !isSubmitting
+                ? 'bg-primary hover:bg-primary-600 text-white shadow-button'
+                : 'bg-surface2 text-muted cursor-not-allowed'
+            }`}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center justify-center space-x-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Logging...</span>
+              </div>
+            ) : (
+              'Log Punch'
+            )}
+          </button>
+        </form>
+      </Card>
+
+      {/* Instructions */}
+      <Card>
+        <div className="text-center">
+          <h4 className="text-lg font-bold text-text mb-4">How to Use</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">1</div>
+              <span>Select the type of punch you performed</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">2</div>
+              <span>Enter the speed in miles per hour</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">3</div>
+              <span>Specify how many punches of this type</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center text-primary font-bold">4</div>
+              <span>Add optional notes about your technique</span>
+            </div>
           </div>
         </div>
-
-        <div className="form-group">
-          <label htmlFor="speed">Speed (mph):</label>
-          <input
-            type="number"
-            id="speed"
-            name="speed"
-            value={punchData.speed}
-            onChange={handleInputChange}
-            min="0"
-            step="0.1"
-            required
-            placeholder="Enter punch speed"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="count">Count:</label>
-          <input
-            type="number"
-            id="count"
-            name="count"
-            value={punchData.count}
-            onChange={handleInputChange}
-            min="1"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="notes">Notes (optional):</label>
-          <textarea
-            id="notes"
-            name="notes"
-            value={punchData.notes}
-            onChange={handleInputChange}
-            rows="3"
-            placeholder="Add any notes about this punch"
-          />
-        </div>
-
-        <button 
-          type="submit" 
-          className="btn" 
-          disabled={isSubmitting || !punchData.punch_type}
-        >
-          {isSubmitting ? 'Logging...' : 'Log Punch'}
-        </button>
-      </form>
-
-      <div style={{ marginTop: '20px', padding: '15px', background: '#f8f9fa', borderRadius: '4px' }}>
-        <h4>Instructions:</h4>
-        <ul>
-          <li>Select the type of punch you performed</li>
-          <li>Enter the speed in miles per hour</li>
-          <li>Specify how many punches of this type</li>
-          <li>Add optional notes about your technique or form</li>
-        </ul>
-      </div>
+      </Card>
     </div>
   );
 }
