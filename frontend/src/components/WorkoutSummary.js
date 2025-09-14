@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import Card from './ui/Card';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use relative paths to leverage the proxy
 
 function secondsToHMS(total) {
   if (!total && total !== 0) return '-';
@@ -23,7 +23,7 @@ const WorkoutSummary = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/workouts/${id}/summary`);
+        const res = await axios.get(`/api/workouts/${id}/summary`);
         setData(res.data);
       } catch (e) {
         setError(e?.response?.data?.detail || 'Failed to load summary');

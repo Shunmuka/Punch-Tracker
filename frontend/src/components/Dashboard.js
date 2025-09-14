@@ -6,7 +6,7 @@ import Metric from './ui/Metric';
 import { chartTheme } from './charts/Theme';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use relative paths to leverage the proxy
 
 function Dashboard() {
   const { user } = useAuth();
@@ -17,16 +17,24 @@ function Dashboard() {
   const [weeklyLoading, setWeeklyLoading] = useState(false);
   const [error, setError] = useState('');
   const [sessionId, setSessionId] = useState(1);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     fetchSessions();
     fetchWeeklyAnalytics();
     fetchAnalytics();
+    
+    // Refresh weekly analytics every 30 seconds
+    const interval = setInterval(() => {
+      fetchWeeklyAnalytics();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchSessions = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/sessions?limit=20`);
+      const response = await axios.get('/api/sessions?limit=20');
       setSessions(response.data.sessions);
     } catch (err) {
       console.error('Failed to fetch sessions:', err);
@@ -36,8 +44,9 @@ function Dashboard() {
   const fetchWeeklyAnalytics = async () => {
     setWeeklyLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/analytics/weekly`);
+      const response = await axios.get('/api/analytics/weekly');
       setWeeklyAnalytics(response.data);
+      setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Failed to fetch weekly analytics:', err);
     } finally {
@@ -48,7 +57,7 @@ function Dashboard() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/analytics/${sessionId}`);
+      const response = await axios.get(`/api/analytics/${sessionId}`);
       setAnalytics(response.data);
       setError('');
     } catch (err) {
@@ -170,7 +179,16 @@ function Dashboard() {
       {/* Weekly Analytics Section */}
       {weeklyAnalytics && (
         <div className="space-y-6">
-          <h3 className="text-xl font-bold text-text">Weekly Progress</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-xl font-bold text-text">Weekly Progress</h3>
+            <button
+              onClick={fetchWeeklyAnalytics}
+              disabled={weeklyLoading}
+              className="px-3 py-1 bg-surface2 hover:bg-surface text-text rounded-lg text-sm transition-colors"
+            >
+              {weeklyLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
           
           {/* Weekly Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

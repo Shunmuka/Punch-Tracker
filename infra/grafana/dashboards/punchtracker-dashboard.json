@@ -1,65 +1,124 @@
 {
   "dashboard": {
     "id": null,
-    "title": "PunchTracker Metrics",
+    "title": "PunchTracker Dashboard",
     "tags": ["punchtracker"],
     "style": "dark",
     "timezone": "browser",
     "panels": [
       {
         "id": 1,
-        "title": "HTTP Requests Total",
-        "type": "stat",
+        "title": "Request Rate",
+        "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total[5m]))",
-            "legendFormat": "Requests/sec"
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
           }
         ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 0
-        }
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
       },
       {
         "id": 2,
-        "title": "HTTP Request Duration",
+        "title": "Response Time (95th percentile)",
         "type": "graph",
         "targets": [
           {
             "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
             "legendFormat": "95th percentile"
-          },
-          {
-            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket[5m]))",
-            "legendFormat": "50th percentile"
           }
         ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 0
-        }
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
       },
       {
         "id": 3,
-        "title": "Request Rate by Endpoint",
+        "title": "Error Rate",
         "type": "graph",
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total[5m])) by (endpoint)",
-            "legendFormat": "{{endpoint}}"
+            "expr": "rate(http_requests_total{status_code=~\"4..|5..\"}[5m])",
+            "legendFormat": "{{status_code}}"
           }
         ],
-        "gridPos": {
-          "h": 8,
-          "w": 24,
-          "x": 0,
-          "y": 8
-        }
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Active Workouts",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "active_workouts",
+            "legendFormat": "Active Workouts"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Punches Logged (Last Hour)",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "increase(punches_logged_total[1h])",
+            "legendFormat": "Punches"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Database Query Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Seconds",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Notifications Sent",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(notifications_sent_total[5m])",
+            "legendFormat": "{{type}} - {{status}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Notifications/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
       }
     ],
     "time": {

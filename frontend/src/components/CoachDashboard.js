@@ -4,6 +4,7 @@ import Card from './ui/Card';
 import Metric from './ui/Metric';
 import axios from 'axios';
 
+// Use relative paths to leverage the proxy
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function CoachDashboard() {
@@ -19,7 +20,7 @@ function CoachDashboard() {
   const fetchAthletes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/coach/athletes`);
+      const response = await axios.get('/api/coach/athletes');
       setAthletes(response.data.athletes);
     } catch (err) {
       console.error('Failed to fetch athletes:', err);
@@ -62,6 +63,14 @@ function CoachDashboard() {
         <p className="text-muted">
           Monitor your athletes' progress and performance
         </p>
+        <div className="mt-4">
+          <a
+            href="/coach/leaderboard"
+            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-600 transition-all duration-200"
+          >
+            🏆 View Leaderboard
+          </a>
+        </div>
       </div>
 
       {/* Stats Overview */}

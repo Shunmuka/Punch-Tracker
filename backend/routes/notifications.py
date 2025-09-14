@@ -1,71 +1,83 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, NotificationPrefs
-from schemas import NotificationPrefsUpdate, NotificationPrefsResponse
+from models import User
 from auth import get_current_user
-from notifications import notification_service
+from schemas import NotificationPrefsUpdate, NotificationPrefsResponse, WeeklyReportData
+from services.notifications import NotificationService
 
 router = APIRouter()
+notification_service = NotificationService()
 
-@router.get("/prefs", response_model=NotificationPrefsResponse)
+@router.get("/notifications/prefs", response_model=NotificationPrefsResponse)
 async def get_notification_prefs(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Get user's notification preferences"""
-    
-    prefs = db.query(NotificationPrefs).filter(NotificationPrefs.user_id == current_user.id).first()
+    """Get user notification preferences"""
+    prefs = notification_service.get_user_prefs(db, current_user.id)
     
     if not prefs:
-        # Create default preferences if they don't exist
-        prefs = NotificationPrefs(
-            user_id=current_user.id,
+        # Return default preferences
+        return NotificationPrefsResponse(
             email_enabled=True,
-            webhook_enabled=False
+            webhook_enabled=False,
+            webhook_url=None
         )
-        db.add(prefs)
-        db.commit()
-        db.refresh(prefs)
     
-    return prefs
+    return NotificationPrefsResponse(
+        email_enabled=prefs.email_enabled,
+        webhook_enabled=prefs.webhook_enabled,
+        webhook_url=prefs.webhook_url
+    )
 
-@router.patch("/prefs", response_model=NotificationPrefsResponse)
+@router.patch("/notifications/prefs", response_model=NotificationPrefsResponse)
 async def update_notification_prefs(
     prefs_data: NotificationPrefsUpdate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    """Update user's notification preferences"""
+    """Update user notification preferences"""
+    prefs = notification_service.upsert_prefs(db, current_user.id, prefs_data.dict(exclude_unset=True))
     
-    prefs = db.query(NotificationPrefs).filter(NotificationPrefs.user_id == current_user.id).first()
-    
-    if not prefs:
-        prefs = NotificationPrefs(user_id=current_user.id)
-        db.add(prefs)
-    
-    # Update fields
-    if prefs_data.email_enabled is not None:
-        prefs.email_enabled = prefs_data.email_enabled
-    if prefs_data.webhook_enabled is not None:
-        prefs.webhook_enabled = prefs_data.webhook_enabled
-    if prefs_data.webhook_url is not None:
-        prefs.webhook_url = prefs_data.webhook_url
-    
-    db.commit()
-    db.refresh(prefs)
-    
-    return prefs
+    return NotificationPrefsResponse(
+        email_enabled=prefs.email_enabled,
+        webhook_enabled=prefs.webhook_enabled,
+        webhook_url=prefs.webhook_url
+    )
 
-@router.post("/test")
-async def test_notification(
-    background_tasks: BackgroundTasks,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+@router.post("/notifications/test")
+async def send_test_notification(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Send a test notification to the current user"""
+    if not current_user.email_verified:
+        raise HTTPException(status_code=400, detail="Email must be verified to receive notifications")
     
-    # Add to background tasks to avoid blocking
-    background_tasks.add_task(notification_service.send_weekly_report, current_user, db)
+    # Generate test report
+    report_data = notification_service.generate_weekly_report(db, current_user.id)
     
-    return {"message": "Test notification queued for delivery"}
+    # Get user preferences
+    prefs = notification_service.get_user_prefs(db, current_user.id)
+    
+    results = {"emails_sent": 0, "webhooks_sent": 0, "errors": 0}
+    
+    # Send test email
+    if not prefs or prefs.email_enabled:
+        if notification_service.send_email_report(current_user, report_data):
+            results["emails_sent"] = 1
+        else:
+            results["errors"] += 1
+    
+    # Send test webhook
+    if prefs and prefs.webhook_enabled and prefs.webhook_url:
+        if notification_service.send_webhook_report(prefs.webhook_url, current_user, report_data):
+            results["webhooks_sent"] = 1
+        else:
+            results["errors"] += 1
+    
+    return {
+        "message": "Test notification sent",
+        "results": results
+    }

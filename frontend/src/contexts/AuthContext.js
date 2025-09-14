@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use relative paths to leverage the proxy
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get(`${API_BASE_URL}/auth/me`);
+          const response = await axios.get('/auth/me');
           setUser(response.data);
         } catch (error) {
           console.error('Auth check failed:', error);
@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      const response = await axios.post('/auth/login', {
         email,
         password
       });
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', access_token);
       
       // Get user profile
-      const userResponse = await axios.get(`${API_BASE_URL}/auth/me`);
+      const userResponse = await axios.get('/auth/me');
       setUser(userResponse.data);
       
       return { success: true };
@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (username, email, password, role = 'athlete') => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/signup`, {
+      const response = await axios.post('/auth/signup', {
         username,
         email,
         password,

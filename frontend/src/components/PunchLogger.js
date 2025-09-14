@@ -3,7 +3,7 @@ import axios from 'axios';
 import Card from './ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+// Use relative paths to leverage the proxy
 
 function PunchLogger() {
   const { user } = useAuth();
@@ -36,7 +36,7 @@ function PunchLogger() {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/sessions?limit=50`);
+      const response = await axios.get('/api/sessions?limit=50');
       setSessions(response.data.sessions);
       if (response.data.sessions.length > 0) {
         setPunchData(prev => ({
@@ -61,7 +61,7 @@ function PunchLogger() {
     if (!newSessionName.trim()) return;
     try {
       setCreatingSession(true);
-      const response = await axios.post(`${API_BASE_URL}/api/sessions`, {
+      const response = await axios.post('/api/sessions', {
         name: newSessionName.trim()
       });
       setSessions(prev => [response.data, ...prev]);
@@ -115,7 +115,7 @@ function PunchLogger() {
     setMessage('');
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/punches`, {
+      const response = await axios.post('/api/punches', {
         ...punchData,
         speed: parsedSpeed,
         count: parsedCount

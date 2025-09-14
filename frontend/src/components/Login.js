@@ -406,6 +406,17 @@ function Login() {
             {showSignup ? 'Log In' : 'Sign Up'}
           </button>
         </div>
+        
+        {!showSignup && (
+          <div className="text-center">
+            <Link 
+              to="/auth/forgot"
+              className="text-primary text-sm hover:text-primary/80 transition-colors duration-200"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

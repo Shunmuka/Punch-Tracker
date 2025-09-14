@@ -1,8 +1,43 @@
-# PunchTracker v3.0 - Smart Workouts Edition
+# PunchTracker v3.1 - Enterprise Features Edition
 
-A comprehensive boxing training platform with intelligent workout management, real-time analytics, and advanced coaching features.
+A comprehensive boxing training platform with intelligent workout management, real-time analytics, advanced coaching features, and enterprise-grade capabilities.
 
-## 🚀 What's New in v3.0 - Smart Workouts
+## 🚀 What's New in v3.1 - Enterprise Features
+
+### 📧 Smart Notifications System
+- **Weekly progress reports**: Automated email and webhook notifications
+- **User preferences**: Configurable notification settings per user
+- **Multiple delivery channels**: Email (SMTP/SendGrid) and webhook support
+- **Test notifications**: Send test reports to verify configuration
+- **Scheduled delivery**: Configurable cron-based weekly reports
+
+### 📊 Advanced Observability
+- **Prometheus metrics**: Comprehensive application and business metrics
+- **Grafana dashboards**: Real-time monitoring and visualization
+- **Alert rules**: Automated alerts for errors, latency, and failures
+- **Performance tracking**: Request rates, response times, and error rates
+- **Database monitoring**: Query performance and slow query detection
+
+### 📱 Device Integration
+- **HMAC-signed webhooks**: Secure device data ingestion
+- **API key management**: Per-user API keys with rate limiting
+- **Real-time processing**: Auto-start workouts from device data
+- **Rate limiting**: 60 requests per minute per API key
+- **Request validation**: HMAC signature verification for security
+
+### 🔐 Enhanced Authentication
+- **Email verification**: Required for notifications with token-based verification
+- **Password reset**: Secure token-based password reset flow
+- **Account security**: Single-use, time-limited tokens
+- **User onboarding**: Email verification during signup process
+
+### 🏆 Coach Leaderboard
+- **Weekly rankings**: Athlete performance leaderboard
+- **Progress tracking**: 7-day punch trends with sparklines
+- **Performance metrics**: Total punches, average speed, best day
+- **Visual analytics**: Interactive charts and progress visualization
+
+## 🚀 Previous Features (v3.0 - Smart Workouts)
 
 ### 🥊 Smart Workout System
 - **Auto-start workouts**: Automatically creates workout when first punch is logged
@@ -116,6 +151,9 @@ docker-compose exec backend alembic upgrade head
 - `POST /auth/signup` - Create new user account
 - `POST /auth/login` - Authenticate user
 - `GET /auth/me` - Get current user profile
+- `POST /auth/verify` - Verify email address with token
+- `POST /auth/forgot` - Send password reset email
+- `POST /auth/reset` - Reset password with token
 
 ### Smart Workouts
 - `POST /workouts/start` - Start new workout (with optional template)
@@ -141,6 +179,18 @@ docker-compose exec backend alembic upgrade head
 - `GET /api/notifications/prefs` - Get notification preferences
 - `PATCH /api/notifications/prefs` - Update notification preferences
 - `POST /api/notifications/test` - Send test notification
+
+### Device Integration
+- `POST /api/device/keys` - Create API key for device ingestion
+- `GET /api/device/keys` - List user's API keys
+- `DELETE /api/device/keys/{id}` - Delete API key
+- `POST /api/device/ingest` - Ingest device data (HMAC-signed)
+
+### Coach Features
+- `POST /api/coach/invite` - Invite athlete
+- `POST /api/coach/accept` - Accept coach invite
+- `GET /api/coach/athletes` - List coach's athletes
+- `GET /api/coach/leaderboard` - Get weekly leaderboard
 
 ### System
 - `GET /health` - Health check
@@ -199,16 +249,34 @@ See `env.example` for all available configuration options.
 - `REDIS_*` - Redis cache configuration
 - `JWT_SECRET` - JWT token signing key
 
+### Email Configuration
+- `SENDGRID_API_KEY` - SendGrid API key for email delivery
+- `SMTP_HOST` - SMTP server hostname
+- `SMTP_PORT` - SMTP server port (default: 587)
+- `SMTP_USER` - SMTP username
+- `SMTP_PASS` - SMTP password
+
+### Notification Configuration
+- `REPORT_SCHEDULE_CRON` - Weekly report schedule (default: Monday 8 AM)
+- `SLACK_WEBHOOK_DEFAULT` - Default Slack webhook URL
+- `DISCORD_WEBHOOK_DEFAULT` - Default Discord webhook URL
+
+### Security Configuration
+- `EMAIL_VERIFY_TOKEN_TTL_MIN` - Email verification token TTL (default: 60)
+- `PASSWORD_RESET_TOKEN_TTL_MIN` - Password reset token TTL (default: 60)
+
+### Device Integration Configuration
+- `WEBHOOK_HMAC_HEADER` - HMAC signature header name (default: X-Signature)
+- `WEBHOOK_DRIFT_SEC` - Allowed timestamp drift in seconds (default: 120)
+- `RATE_LIMIT_PER_MIN` - API rate limit per minute (default: 60)
+
 ### Workout Configuration
 - `INACTIVITY_MINUTES` - Auto-stop timeout (default: 3)
 - `SEGMENT_ACTIVE_MIN_S` - Minimum active segment duration (default: 40)
 - `SEGMENT_REST_MIN_S` - Minimum rest segment duration (default: 15)
 
 ### Optional Variables
-- `SENDGRID_API_KEY` - Email service for notifications
-- `SLACK_WEBHOOK_DEFAULT` - Default Slack webhook URL
-- `DISCORD_WEBHOOK_DEFAULT` - Default Discord webhook URL
-- `REPORT_SCHEDULE_CRON` - Weekly report schedule (default: Monday 8 AM)
+- `FRONTEND_URL` - Frontend URL for email links (default: http://localhost:3000)
 - `USE_SQLITE_FALLBACK` - Use SQLite when PostgreSQL unavailable
 
 ## Testing
@@ -226,12 +294,13 @@ cd frontend && npm test
 ```
 /punchtracker
   /backend (FastAPI app: routes, models, services, tests, auth, notifications)
-    /routes (auth, sessions, punches, analytics, coach, notifications, workouts)
+    /routes (auth, sessions, punches, analytics, coach, notifications, workouts, device, auth_flows, leaderboard)
+    /services (notifications, device, auth_flows, leaderboard)
     /alembic (database migrations)
   /frontend (React app: pages, components, charts, tests, contexts)
     /src/contexts (AuthContext for user management)
-    /src/components (Login, Dashboard, PunchLogger, CoachDashboard, RecordingChip, WorkoutSummary)
-  /infra (docker-compose.yml, prometheus.yml, grafana dashboards)
+    /src/components (Login, Dashboard, PunchLogger, CoachDashboard, RecordingChip, WorkoutSummary, NotificationsSettings, Leaderboard, EmailVerification, ForgotPassword, ResetPassword, DeviceIngestion)
+  /infra (docker-compose.yml, prometheus.yml, grafana dashboards, alert_rules.yml)
   env.example
   README.md
   .github/workflows/ci.yml
@@ -262,10 +331,40 @@ cd frontend && npm test
 - Role-based access control
 - Data validation and sanitization
 - Error handling and recovery
+- HMAC-signed device integration
+- Rate limiting and API key management
+
+### 📧 Smart Notifications
+- Weekly progress reports
+- Multiple delivery channels
+- User-configurable preferences
+- Test notification capabilities
+
+### 📊 Enterprise Observability
+- Prometheus metrics collection
+- Grafana dashboards and visualization
+- Automated alerting and monitoring
+- Performance and error tracking
+
+### 🏆 Advanced Coaching
+- Weekly athlete leaderboards
+- Progress tracking and analytics
+- Visual performance trends
+- Comprehensive athlete management
 
 ## Changelog
 
-### v3.0.0 (Current) - Smart Workouts Edition
+### v3.1.0 (Current) - Enterprise Features Edition
+- ✅ Added Smart Notifications system with weekly reports
+- ✅ Implemented Prometheus metrics and Grafana dashboards
+- ✅ Added HMAC-signed device ingestion with API key management
+- ✅ Created email verification and password reset flows
+- ✅ Built weekly leaderboard for coaches with visual analytics
+- ✅ Enhanced security with rate limiting and token management
+- ✅ Added comprehensive observability and monitoring
+- ✅ Implemented user-configurable notification preferences
+
+### v3.0.0 - Smart Workouts Edition
 - ✅ Added Smart Workout system with auto-start/stop
 - ✅ Implemented workout templates (Sparring, Heavy Bag, Speed Bag, Conditioning)
 - ✅ Added planned segments with target durations

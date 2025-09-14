@@ -14,8 +14,9 @@ from database import get_db, engine
 from models import Base, User
 from routes import punches, analytics
 from routes import auth, sessions, notifications, coach, analytics_enhanced
-from routes import workouts
-from notifications import notification_service
+from routes import workouts, device, auth_flows, leaderboard
+from services.notifications import NotificationService
+from metrics import get_metrics, get_metrics_content_type
 
 # Load environment variables
 load_dotenv()
@@ -23,11 +24,7 @@ load_dotenv()
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Prometheus metrics
-REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP requests', ['method', 'endpoint'])
-REQUEST_DURATION = Histogram('http_request_duration_seconds', 'HTTP request duration')
-AUTH_REQUESTS = Counter('auth_requests_total', 'Authentication requests', ['endpoint', 'status'])
-NOTIFICATION_REQUESTS = Counter('notification_requests_total', 'Notification requests', ['type', 'status'])
+# Prometheus metrics are now defined in metrics.py
 
 app = FastAPI(
     title="PunchTracker API",
@@ -46,14 +43,17 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["authentication"])
+app.include_router(auth_flows.router, tags=["auth-flows"])
 app.include_router(sessions.router, prefix="/api", tags=["sessions"])
 app.include_router(punches.router, prefix="/api", tags=["punches"])
 # Register enhanced analytics first so static routes like /analytics/weekly are matched
 app.include_router(analytics_enhanced.router, prefix="/api", tags=["analytics-enhanced"])
 app.include_router(analytics.router, prefix="/api", tags=["analytics"])
-app.include_router(workouts.router, tags=["workouts"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
+app.include_router(workouts.router, prefix="/api", tags=["workouts"])
+app.include_router(notifications.router, prefix="/api", tags=["notifications"])
+app.include_router(device.router, prefix="/api", tags=["device"])
 app.include_router(coach.router, prefix="/api/coach", tags=["coach"])
+app.include_router(leaderboard.router, prefix="/api", tags=["leaderboard"])
 
 # Scheduler for weekly reports
 scheduler = BackgroundScheduler()
@@ -62,17 +62,9 @@ def send_weekly_reports():
     """Send weekly reports to all users with email enabled"""
     db = next(get_db())
     try:
-        users = db.query(User).join(User.notification_prefs).filter(
-            User.notification_prefs.has(email_enabled=True)
-        ).all()
-        
-        for user in users:
-            try:
-                notification_service.send_weekly_report(user, db)
-                NOTIFICATION_REQUESTS.labels(type="weekly_report", status="success").inc()
-            except Exception as e:
-                print(f"Failed to send weekly report to {user.email}: {e}")
-                NOTIFICATION_REQUESTS.labels(type="weekly_report", status="error").inc()
+        notification_service = NotificationService()
+        results = notification_service.send_weekly_reports(db)
+        print(f"Weekly reports sent: {results}")
     except Exception as e:
         print(f"Error in weekly report scheduler: {e}")
     finally:
@@ -96,16 +88,9 @@ async def prometheus_middleware(request, call_next):
     response = await call_next(request)
     duration = time.time() - start_time
     
-    REQUEST_COUNT.labels(method=request.method, endpoint=request.url.path).inc()
-    REQUEST_DURATION.observe(duration)
-    
-    # Track auth endpoints
-    if request.url.path.startswith("/auth/"):
-        AUTH_REQUESTS.labels(endpoint=request.url.path, status=response.status_code).inc()
-    
-    # Track notification endpoints
-    if request.url.path.startswith("/api/notifications/"):
-        NOTIFICATION_REQUESTS.labels(type="api", status=response.status_code).inc()
+    # Record metrics using the centralized metrics module
+    from metrics import record_request_metrics
+    record_request_metrics(request, response, duration)
     
     return response
 
@@ -120,7 +105,7 @@ async def health_check():
 @app.get("/metrics")
 async def metrics():
     """Prometheus metrics endpoint"""
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(get_metrics(), media_type=get_metrics_content_type())
 
 @app.on_event("shutdown")
 async def shutdown_event():

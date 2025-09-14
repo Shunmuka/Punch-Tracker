@@ -154,3 +154,74 @@ class AthleteSummary(BaseModel):
 
 class CoachAthletesResponse(BaseModel):
     athletes: List[AthleteSummary]
+
+# Notification schemas
+class NotificationPrefsUpdate(BaseModel):
+    email_enabled: Optional[bool] = None
+    webhook_enabled: Optional[bool] = None
+    webhook_url: Optional[str] = None
+
+class NotificationPrefsResponse(BaseModel):
+    email_enabled: bool
+    webhook_enabled: bool
+    webhook_url: Optional[str] = None
+
+class WeeklyReportData(BaseModel):
+    total_punches: int
+    avg_speed: float
+    workouts_count: int
+    best_session_punches: int
+    change_percent: float
+    week_start: datetime
+    week_end: datetime
+
+# Device ingestion schemas
+class DeviceEvent(BaseModel):
+    ts: datetime
+    punch_type: str
+    speed: float
+    count: int = 1
+
+class DeviceIngestRequest(BaseModel):
+    user_api_key: str
+    events: List[DeviceEvent]
+
+class ApiKeyCreate(BaseModel):
+    name: str
+
+class ApiKeyResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+
+class ApiKeyCreateResponse(BaseModel):
+    id: int
+    name: str
+    secret: str  # Only returned on creation
+    created_at: datetime
+
+# Auth flow schemas
+class EmailVerifyRequest(BaseModel):
+    token: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+# Leaderboard schemas
+class LeaderboardEntry(BaseModel):
+    athlete_id: int
+    athlete_name: str
+    total_punches: int
+    avg_speed: float
+    rank: int
+    daily_punches: List[int]  # Last 7 days
+
+class LeaderboardResponse(BaseModel):
+    entries: List[LeaderboardEntry]
+    week_start: datetime
+    week_end: datetime

@@ -46,11 +46,22 @@ services:
       - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
       - JWT_EXPIRE_MINUTES=${JWT_EXPIRE_MINUTES:-1440}
       - SENDGRID_API_KEY=${SENDGRID_API_KEY:-your-sendgrid-api-key-here}
-      - FROM_EMAIL=${FROM_EMAIL:-noreply@punchtracker.com}
-      - FROM_NAME=${FROM_NAME:-PunchTracker}
-      - REPORT_SCHEDULE_CRON=${REPORT_SCHEDULE_CRON:-0 8 * * 1}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-your-email@gmail.com}
+      - SMTP_PASS=${SMTP_PASS:-your-app-password}
+      - REPORT_SCHEDULE_CRON=${REPORT_SCHEDULE_CRON:-0 8 * * MON}
       - SLACK_WEBHOOK_DEFAULT=${SLACK_WEBHOOK_DEFAULT:-https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK}
       - DISCORD_WEBHOOK_DEFAULT=${DISCORD_WEBHOOK_DEFAULT:-https://discord.com/api/webhooks/YOUR/DISCORD/WEBHOOK}
+      - EMAIL_VERIFY_TOKEN_TTL_MIN=${EMAIL_VERIFY_TOKEN_TTL_MIN:-60}
+      - PASSWORD_RESET_TOKEN_TTL_MIN=${PASSWORD_RESET_TOKEN_TTL_MIN:-60}
+      - WEBHOOK_HMAC_HEADER=${WEBHOOK_HMAC_HEADER:-X-Signature}
+      - WEBHOOK_DRIFT_SEC=${WEBHOOK_DRIFT_SEC:-120}
+      - RATE_LIMIT_PER_MIN=${RATE_LIMIT_PER_MIN:-60}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - INACTIVITY_MINUTES=${INACTIVITY_MINUTES:-3}
+      - SEGMENT_ACTIVE_MIN_S=${SEGMENT_ACTIVE_MIN_S:-40}
+      - SEGMENT_REST_MIN_S=${SEGMENT_REST_MIN_S:-15}
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,6 +77,8 @@ services:
       - "3000:3000"
     environment:
       - REACT_APP_API_URL=http://localhost:8000
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
     volumes:
@@ -79,6 +92,7 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
