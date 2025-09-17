@@ -1,4 +1,4 @@
-# PunchTracker v3.1 - Enterprise Features Edition
+# PunchTracker v3.1.1 - Critical Bug Fixes & UI Improvements
 
 A comprehensive boxing training platform with intelligent workout management, real-time analytics, advanced coaching features, and enterprise-grade capabilities.
 
@@ -98,27 +98,40 @@ A comprehensive boxing training platform with intelligent workout management, re
    cp env.example .env
    ```
 
-2. **Start all services**:
+2. **Configure email service** (optional, for notifications):
+   ```bash
+   # Edit .env file and add your email credentials
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   ```
+
+3. **Start all services**:
    ```bash
    docker-compose up -d
    ```
 
-3. **Run database migrations**:
+4. **Run database migrations**:
    ```bash
    docker-compose exec backend alembic upgrade head
    ```
 
-4. **Seed initial data** (optional):
+5. **Seed initial data** (optional):
    ```bash
    docker-compose exec backend python seed_data.py
    ```
 
-5. **Access the application**:
+6. **Access the application**:
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
    - API Docs: http://localhost:8000/docs
    - Grafana: http://localhost:3001 (admin/admin)
    - Prometheus: http://localhost:9090
+
+### 🎯 **New in v3.1.1**: 
+- **Mobile menu now works** in split-screen view
+- **Punch logging automatically starts workouts** 
+- **Real-time workout status updates**
+- **Better error messages** for troubleshooting
 
 ## Development
 
@@ -354,6 +367,12 @@ cd frontend && npm test
 
 ## Recent Bug Fixes & Improvements
 
+### 🐛 Critical Bug Fixes (Latest)
+- **Fixed Punch Logging Workout Start**: Resolved critical bug where punch logging wasn't starting workouts due to missing user filter in database query
+- **Mobile Menu Functionality**: Added working hamburger menu with dropdown for split-screen and mobile viewing
+- **Real-time Workout Updates**: Implemented instant workout status updates when punches are logged
+- **Notification System**: Fixed authentication issues and improved error messages for email configuration
+
 ### Timer & Analytics Fixes
 - **Fixed Real-time Timer**: Resolved issue where workout timer was stuck at 00:00 and not updating in real-time
 - **Enhanced Weekly Progress**: Added auto-refresh functionality and improved data accuracy
@@ -366,9 +385,27 @@ cd frontend && npm test
 - **Performance Optimization**: Implemented Redis caching and database query optimization
 - **Code Quality**: Added comprehensive linting and code quality checks
 
+### UI/UX Improvements
+- **Mobile Navigation**: Fully functional hamburger menu with click-outside handling
+- **Login Page Cleanup**: Removed redundant login button from login page
+- **Real-time Communication**: Custom event system for instant component updates
+- **Error Message Clarity**: Specific, actionable error messages throughout the application
+
 ## Changelog
 
-### v3.1.0 (Current) - Enterprise Features Edition
+### v3.1.1 (Latest) - Critical Bug Fixes & UI Improvements
+- 🐛 **CRITICAL FIX**: Fixed punch logging not starting workouts (missing user filter in database query)
+- 🐛 **CRITICAL FIX**: Added working mobile hamburger menu for split-screen viewing
+- 🐛 **CRITICAL FIX**: Implemented real-time workout status updates via custom events
+- 🐛 **CRITICAL FIX**: Fixed notification system authentication and error handling
+- ✨ **UI/UX**: Removed redundant login button from login page
+- ✨ **UI/UX**: Added click-outside handling for mobile menu
+- ✨ **UI/UX**: Improved error messages with specific, actionable feedback
+- ✨ **UI/UX**: Enhanced notification settings with proper authentication
+- 🔧 **DEV**: Added periodic refresh as backup for workout status updates
+- 🔧 **DEV**: Improved development mode email verification bypass
+
+### v3.1.0 - Enterprise Features Edition
 - ✅ Added Smart Notifications system with weekly reports
 - ✅ Implemented Prometheus metrics and Grafana dashboards
 - ✅ Added HMAC-signed device ingestion with API key management
@@ -419,6 +456,65 @@ cd frontend && npm test
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Troubleshooting
+
+### Common Issues
+
+#### Email Notifications Not Working
+- **Error**: "Email service not configured. Please set up SMTP or SendGrid."
+- **Solution**: Configure email service in `.env` file:
+  ```bash
+  # Option 1: Gmail SMTP
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=your-email@gmail.com
+  SMTP_PASS=your-app-password
+  
+  # Option 2: SendGrid
+  SENDGRID_API_KEY=your-sendgrid-api-key
+  ```
+
+#### Mobile Menu Not Working
+- **Issue**: Hamburger menu doesn't respond to clicks
+- **Solution**: Ensure you're using the latest version (v3.1.1+) with the fixed mobile menu
+
+#### Workout Not Starting When Logging Punches
+- **Issue**: "Start Workout" button doesn't change to "Recording" after logging a punch
+- **Solution**: This was fixed in v3.1.1. Update to the latest version and restart the backend
+
+#### Hot Reload Not Working
+- **Issue**: Changes don't appear automatically during development
+- **Solution**: Ensure Docker volumes are properly mounted and services are running with `--reload` flag
+
+### Development Issues
+
+#### Backend Not Starting
+```bash
+# Check logs
+docker-compose logs backend
+
+# Restart services
+docker-compose restart backend
+```
+
+#### Frontend Not Loading
+```bash
+# Check if frontend is running
+docker-compose ps frontend
+
+# Restart frontend
+docker-compose restart frontend
+```
+
+#### Database Connection Issues
+```bash
+# Check database status
+docker-compose ps postgres
+
+# Run migrations
+docker-compose exec backend alembic upgrade head
+```
 
 ## Support
 
