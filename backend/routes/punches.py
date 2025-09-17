@@ -19,8 +19,8 @@ async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Auto-start workout if none active
-    active_workout = db.query(Workout).filter(Workout.ended_at == None).first()
+    # Auto-start workout if none active for this user
+    active_workout = db.query(Workout).filter(Workout.user_id == session.user_id, Workout.ended_at == None).first()
     if not active_workout:
         active_workout = Workout(user_id=session.user_id, started_at=datetime.utcnow(), auto_detected=True)
         db.add(active_workout)

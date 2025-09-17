@@ -52,8 +52,12 @@ async def send_test_notification(
     current_user: User = Depends(get_current_user)
 ):
     """Send a test notification to the current user"""
-    if not current_user.email_verified:
-        raise HTTPException(status_code=400, detail="Email must be verified to receive notifications")
+    # In development mode, allow test notifications even without email verification
+    import os
+    is_development = os.getenv("ENVIRONMENT", "development") == "development"
+    
+    if not current_user.email_verified and not is_development:
+        raise HTTPException(status_code=400, detail="Please verify your email address first. Check your inbox for a verification link.")
     
     # Generate test report
     report_data = notification_service.generate_weekly_report(db, current_user.id)
@@ -62,6 +66,7 @@ async def send_test_notification(
     prefs = notification_service.get_user_prefs(db, current_user.id)
     
     results = {"emails_sent": 0, "webhooks_sent": 0, "errors": 0}
+    error_messages = []
     
     # Send test email
     if not prefs or prefs.email_enabled:
@@ -69,6 +74,7 @@ async def send_test_notification(
             results["emails_sent"] = 1
         else:
             results["errors"] += 1
+            error_messages.append("Email service not configured. Please set up SMTP or SendGrid.")
     
     # Send test webhook
     if prefs and prefs.webhook_enabled and prefs.webhook_url:
@@ -76,6 +82,12 @@ async def send_test_notification(
             results["webhooks_sent"] = 1
         else:
             results["errors"] += 1
+            error_messages.append("Webhook failed to send.")
+    
+    # If no notifications were sent and there are errors, provide helpful message
+    if results["emails_sent"] == 0 and results["webhooks_sent"] == 0 and results["errors"] > 0:
+        if error_messages:
+            raise HTTPException(status_code=400, detail="; ".join(error_messages))
     
     return {
         "message": "Test notification sent",

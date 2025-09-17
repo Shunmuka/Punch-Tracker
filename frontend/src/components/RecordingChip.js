@@ -42,7 +42,7 @@ const RecordingChip = ({ className = '' }) => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Check for active workout on mount
+  // Check for active workout on mount and periodically
   useEffect(() => {
     const checkActiveWorkout = async () => {
       try {
@@ -57,6 +57,8 @@ const RecordingChip = ({ className = '' }) => {
         
         if (response.data) {
           setActive(response.data);
+        } else {
+          setActive(null);
         }
       } catch (error) {
         console.error('Error checking active workout:', error);
@@ -64,6 +66,21 @@ const RecordingChip = ({ className = '' }) => {
     };
     
     checkActiveWorkout();
+    
+    // Check every 5 seconds for active workouts
+    const interval = setInterval(checkActiveWorkout, 5000);
+    
+    // Listen for punch logged events to refresh immediately
+    const handlePunchLogged = () => {
+      checkActiveWorkout();
+    };
+    
+    window.addEventListener('punchLogged', handlePunchLogged);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('punchLogged', handlePunchLogged);
+    };
   }, []);
 
   const handleStart = async () => {

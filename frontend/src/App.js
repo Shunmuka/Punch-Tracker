@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -19,6 +19,22 @@ import './App.css';
 function Navigation() {
   const { isAuthenticated, user, logout } = useAuth();
   const location = useLocation();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const mobileMenuRef = useRef(null);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setShowMobileMenu(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   if (!isAuthenticated) {
     return (
@@ -28,14 +44,17 @@ function Navigation() {
             <span className="text-text">PUNCH</span>
             <span className="text-primary">TRACKER</span> 🥊
           </Link>
-          <div className="flex space-x-4">
-            <Link
-              to="/login"
-              className="h-10 px-6 bg-primary hover:bg-primary-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              Log In
-            </Link>
-          </div>
+          {/* Only show login button if not on login page */}
+          {location.pathname !== '/login' && location.pathname !== '/' && (
+            <div className="flex space-x-4">
+              <Link
+                to="/login"
+                className="h-10 px-6 bg-primary hover:bg-primary-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                Log In
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
     );
@@ -101,13 +120,94 @@ function Navigation() {
           </div>
 
           {/* Mobile Hamburger Menu */}
-          <div className="lg:hidden relative">
+          <div className="lg:hidden relative" ref={mobileMenuRef}>
             <button
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="p-2 text-muted hover:text-text hover:bg-surface2 rounded-full transition-all duration-200 h-10 w-10 flex items-center justify-center"
               title="Menu"
             >
               <span className="text-xl">☰</span>
             </button>
+            
+            {/* Mobile Menu Dropdown */}
+            {showMobileMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-surface border border-[#242a35] rounded-lg shadow-lg z-50">
+                <div className="py-2">
+                  {/* Log Punch */}
+                  <Link
+                    to="/log-punch"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-all duration-200"
+                  >
+                    <span className="mr-2">🥊</span>
+                    Log Punch
+                  </Link>
+                  
+                  {/* Coach Dashboard (if coach) */}
+                  {user?.role === 'coach' && (
+                    <Link
+                      to="/coach"
+                      onClick={() => setShowMobileMenu(false)}
+                      className="flex items-center px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-all duration-200"
+                    >
+                      <span className="mr-2">👨‍🏫</span>
+                      Coach Dashboard
+                    </Link>
+                  )}
+                  
+                  {/* Settings */}
+                  <Link
+                    to="/settings/notifications"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-all duration-200"
+                  >
+                    <span className="mr-2">🔔</span>
+                    Notifications
+                  </Link>
+                  
+                  {/* Device API */}
+                  <Link
+                    to="/device"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="flex items-center px-4 py-2 text-sm text-muted hover:text-text hover:bg-surface2 transition-all duration-200"
+                  >
+                    <span className="mr-2">📱</span>
+                    Device API
+                  </Link>
+                  
+                  {/* Divider */}
+                  <div className="border-t border-[#242a35] my-2"></div>
+                  
+                  {/* User Info */}
+                  <div className="px-4 py-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          user?.role === 'coach' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {user?.role}
+                        </span>
+                        <span className="text-sm font-medium text-text">{user?.username}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Logout */}
+                  <button
+                    onClick={() => {
+                      setShowMobileMenu(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center px-4 py-2 text-sm text-muted hover:text-red-400 hover:bg-red-50 transition-all duration-200"
+                  >
+                    <span className="mr-2">🚪</span>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -21,7 +21,12 @@ const NotificationsSettings = () => {
   const fetchPrefs = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/notifications/prefs`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/api/notifications/prefs`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setPrefs(response.data);
     } catch (error) {
       console.error('Failed to fetch notification preferences:', error);
@@ -34,7 +39,12 @@ const NotificationsSettings = () => {
     try {
       setSaving(true);
       setMessage('');
-      await axios.patch(`${API_BASE_URL}/api/notifications/prefs`, prefs);
+      const token = localStorage.getItem('token');
+      await axios.patch(`${API_BASE_URL}/api/notifications/prefs`, prefs, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setMessage('Settings saved successfully!');
     } catch (error) {
       console.error('Failed to save preferences:', error);
@@ -48,11 +58,17 @@ const NotificationsSettings = () => {
     try {
       setTesting(true);
       setMessage('');
-      const response = await axios.post(`${API_BASE_URL}/api/notifications/test`);
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_BASE_URL}/api/notifications/test`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setMessage(`Test notification sent! ${response.data.results.emails_sent} email(s), ${response.data.results.webhooks_sent} webhook(s)`);
     } catch (error) {
       console.error('Failed to send test notification:', error);
-      setMessage('Failed to send test notification. Please try again.');
+      const errorMessage = error.response?.data?.detail || 'Failed to send test notification. Please try again.';
+      setMessage(errorMessage);
     } finally {
       setTesting(false);
     }

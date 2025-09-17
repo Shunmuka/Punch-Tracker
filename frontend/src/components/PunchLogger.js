@@ -128,6 +128,10 @@ function PunchLogger() {
         count: 1,
         notes: ''
       }));
+      
+      // Trigger a custom event to notify other components that a punch was logged
+      // This will help the RecordingChip component know to refresh its state
+      window.dispatchEvent(new CustomEvent('punchLogged'));
     } catch (error) {
       console.error('Error logging punch:', error);
       setMessage(`Error: ${error.response?.data?.detail || 'Failed to log punch'}`);
