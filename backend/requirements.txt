@@ -14,7 +14,8 @@ python-dotenv==1.0.0
 # Optional ML deps removed for local dev speed
 # torch and numpy are optional and guarded in code
 # Auth dependencies
-passlib[bcrypt]==1.7.4
+passlib==1.7.4
+bcrypt==3.2.2
 python-jose[cryptography]==3.3.0
 # Email and notifications
 sendgrid==6.10.0

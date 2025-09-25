@@ -3,26 +3,31 @@ Seed script to populate the database with sample data
 """
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from database import SessionLocal, engine
-from models import Base, User, Session, Punch
 from datetime import datetime, timedelta
 import random
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from database import SessionLocal
+from models import User, Session, Punch
 
 def create_sample_data():
     """Create sample users, sessions, and punches"""
     
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-    
     db = SessionLocal()
     
     try:
+        # Check if user already exists
+        existing_user = db.query(User).filter(User.email == "test@example.com").first()
+        if existing_user:
+            print("✅ Sample data already exists.")
+            return
+
         # Create sample user
         user = User(
             username="testuser",
-            email="test@example.com"
+            email="test@example.com",
+            password_hash="$2b$12$dummyhash.for.seeding.purpose",
+            role="athlete"
         )
         db.add(user)
         db.commit()

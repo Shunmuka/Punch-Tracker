@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
-from auth import get_current_user
+from auth import get_current_user, csrf_protected_user
 from schemas import NotificationPrefsUpdate, NotificationPrefsResponse, WeeklyReportData
 from services.notifications import NotificationService
 
@@ -35,7 +35,7 @@ async def get_notification_prefs(
 async def update_notification_prefs(
     prefs_data: NotificationPrefsUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(csrf_protected_user)
 ):
     """Update user notification preferences"""
     prefs = notification_service.upsert_prefs(db, current_user.id, prefs_data.dict(exclude_unset=True))
@@ -49,7 +49,7 @@ async def update_notification_prefs(
 @router.post("/notifications/test")
 async def send_test_notification(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(csrf_protected_user)
 ):
     """Send a test notification to the current user"""
     # In development mode, allow test notifications even without email verification

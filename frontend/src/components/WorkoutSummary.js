@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import Card from './ui/Card';
 
 // Use relative paths to leverage the proxy
@@ -23,7 +23,7 @@ const WorkoutSummary = () => {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await axios.get(`/api/workouts/${id}/summary`);
+        const res = await axiosInstance.get(`/workouts/${id}/summary`);
         setData(res.data);
       } catch (e) {
         setError(e?.response?.data?.detail || 'Failed to load summary');

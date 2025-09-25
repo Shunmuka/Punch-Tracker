@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User
-from auth import get_current_user
+from auth import get_current_user, csrf_protected_user
 from schemas import DeviceIngestRequest, ApiKeyCreate, ApiKeyCreateResponse, ApiKeyResponse
 from services.device import DeviceService
 from typing import List, Optional
@@ -14,7 +14,7 @@ device_service = DeviceService()
 async def create_api_key(
     key_data: ApiKeyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(csrf_protected_user)
 ):
     """Create a new API key for device ingestion"""
     result = device_service.create_api_key(db, current_user.id, key_data.name)
@@ -33,7 +33,7 @@ async def get_api_keys(
 async def delete_api_key(
     key_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(csrf_protected_user)
 ):
     """Delete an API key"""
     success = device_service.delete_api_key(db, current_user.id, key_id)

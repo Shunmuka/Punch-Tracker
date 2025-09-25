@@ -96,6 +96,25 @@ class NotificationService:
             week_end=now
         )
 
+    def send_email(self, to_email: str, subject: str, html_content: str) -> bool:
+        """Send email with custom content"""
+        # Check if email is properly configured
+        if not self.smtp_host or not self.smtp_user or self.smtp_user == "your-email@gmail.com":
+            print(f"Email not configured. Would send to {to_email}: {subject}")
+            print(f"Content: {html_content[:200]}...")
+            return True  # Return True for development/testing
+        
+        try:
+            # Send via SendGrid if available and properly configured
+            if self.sendgrid_api_key and self.sendgrid_api_key != "your-sendgrid-api-key-here":
+                return self._send_via_sendgrid(to_email, subject, html_content)
+            else:
+                return self._send_via_smtp(to_email, subject, html_content)
+                
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+            return False
+
     def send_email_report(self, user: User, report_data: WeeklyReportData) -> bool:
         """Send weekly report via email"""
         if not self.smtp_host or not self.smtp_user:
@@ -126,11 +145,7 @@ class NotificationService:
             </html>
             """
             
-            # Send via SendGrid if available
-            if self.sendgrid_api_key:
-                return self._send_via_sendgrid(user.email, subject, html_content)
-            else:
-                return self._send_via_smtp(user.email, subject, html_content)
+            return self.send_email(user.email, subject, html_content)
                 
         except Exception as e:
             print(f"Failed to send email: {e}")

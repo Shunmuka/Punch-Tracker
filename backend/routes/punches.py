@@ -2,16 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db, get_redis
-from models import Punch, Session, Workout
+from models import Punch, Session, Workout, User
 from datetime import datetime, timedelta
 import os
 from schemas import PunchCreate, PunchResponse
 import json
+from auth import csrf_protected_user
 
 router = APIRouter()
 
 @router.post("/punches", response_model=PunchResponse)
-async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_client = Depends(get_redis)):
+async def create_punch(punch: PunchCreate, db: Session = Depends(get_db), redis_client = Depends(get_redis), current_user: User = Depends(csrf_protected_user)):
     """Create a new punch record"""
     
     # Verify session exists

@@ -4,6 +4,7 @@ import axios from 'axios';
 const AuthContext = createContext();
 
 // Use relative paths to leverage the proxy
+axios.defaults.withCredentials = true;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -16,34 +17,30 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [csrfToken, setCsrfToken] = useState(null);
 
-  // Set up axios interceptor for auth token
+  // Set up axios interceptor for CSRF token
   useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    } else {
-      delete axios.defaults.headers.common['Authorization'];
+    if (csrfToken) {
+      axios.defaults.headers.common['X-CSRF-Token'] = csrfToken;
     }
-  }, [token]);
+  }, [csrfToken]);
 
   // Check if user is logged in on mount
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
-        try {
-          const response = await axios.get('/auth/me');
-          setUser(response.data);
-        } catch (error) {
-          console.error('Auth check failed:', error);
-          logout();
-        }
+      try {
+        const response = await axios.get('/auth/me');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setUser(null);
       }
       setLoading(false);
     };
 
     checkAuth();
-  }, [token]);
+  }, []);
 
   const login = async (email, password) => {
     try {
@@ -52,10 +49,9 @@ export const AuthProvider = ({ children }) => {
         password
       });
       
-      const { access_token } = response.data;
-      setToken(access_token);
-      localStorage.setItem('token', access_token);
-      
+      const { csrf_token } = response.data;
+      setCsrfToken(csrf_token);
+
       // Get user profile
       const userResponse = await axios.get('/auth/me');
       setUser(userResponse.data);
@@ -72,7 +68,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (username, email, password, role = 'athlete') => {
     try {
-      const response = await axios.post('/auth/signup', {
+      await axios.post('/auth/signup', {
         username,
         email,
         password,
@@ -90,16 +86,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await axios.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    setCsrfToken(null);
+    delete axios.defaults.headers.common['X-CSRF-Token'];
   };
 
   const value = {
     user,
-    token,
     loading,
     login,
     signup,
@@ -115,3 +114,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+

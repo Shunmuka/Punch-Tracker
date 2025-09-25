@@ -5,7 +5,7 @@ import os
 
 from database import get_db, get_redis
 from models import Workout, WorkoutSegment, Punch, User
-from auth import get_current_user
+from auth import get_current_user, csrf_protected_user
 from schemas import WorkoutStartResponse, WorkoutSummary, WorkoutTemplate, WorkoutStartRequest
 
 router = APIRouter()
@@ -51,7 +51,7 @@ async def get_workout_templates():
     return WORKOUT_TEMPLATES
 
 @router.post("/workouts/start", response_model=WorkoutStartResponse)
-async def start_workout(request: WorkoutStartRequest = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def start_workout(request: WorkoutStartRequest = None, db: Session = Depends(get_db), current_user: User = Depends(csrf_protected_user)):
     active = db.query(Workout).filter(Workout.user_id == current_user.id, Workout.ended_at == None).first()
     if active:
         template = WORKOUT_TEMPLATES.get(request.template_name) if request and request.template_name else None
@@ -72,7 +72,7 @@ async def start_workout(request: WorkoutStartRequest = None, db: Session = Depen
     return {"id": w.id, "started_at": w.started_at, "template": template}
 
 @router.post("/workouts/stop", response_model=WorkoutStartResponse)
-async def stop_workout(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def stop_workout(db: Session = Depends(get_db), current_user: User = Depends(csrf_protected_user)):
     active = db.query(Workout).filter(Workout.user_id == current_user.id, Workout.ended_at == None).first()
     if not active:
         # Gracefully return the most recent workout so the UI can navigate

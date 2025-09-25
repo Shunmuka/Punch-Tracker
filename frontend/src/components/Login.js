@@ -214,12 +214,12 @@ function Login() {
                 />
                 <span className="ml-2 text-muted text-sm">Keep me logged in</span>
               </label>
-              <button
-                type="button"
+              <Link
+                to="/auth/forgot"
                 className="text-primary text-sm font-semibold hover:text-primary/80 transition-colors duration-200"
               >
                 Forgot Password?
-              </button>
+              </Link>
             </div>
 
             {/* Login Button */}

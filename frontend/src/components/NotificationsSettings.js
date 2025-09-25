@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 
 const NotificationsSettings = () => {
   const [prefs, setPrefs] = useState({
@@ -22,7 +22,7 @@ const NotificationsSettings = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_BASE_URL}/api/notifications/prefs`, {
+      const response = await axiosInstance.get('/notifications/prefs', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -40,7 +40,7 @@ const NotificationsSettings = () => {
       setSaving(true);
       setMessage('');
       const token = localStorage.getItem('token');
-      await axios.patch(`${API_BASE_URL}/api/notifications/prefs`, prefs, {
+      await axiosInstance.patch('/notifications/prefs', prefs, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -59,7 +59,7 @@ const NotificationsSettings = () => {
       setTesting(true);
       setMessage('');
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${API_BASE_URL}/api/notifications/test`, {}, {
+      const response = await axiosInstance.post('/notifications/test', {}, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -22,7 +22,7 @@ from metrics import get_metrics, get_metrics_content_type
 load_dotenv()
 
 # Create database tables
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 # Prometheus metrics are now defined in metrics.py
 
@@ -33,12 +33,16 @@ app = FastAPI(
 )
 
 # CORS middleware
+allowed_origins = [
+    os.getenv("FRONTEND_URL", "http://localhost:3000"),
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
 )
 
 # Include routers

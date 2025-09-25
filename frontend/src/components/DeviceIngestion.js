@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
-// Use relative paths to leverage the proxy
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const DeviceIngestion = () => {
   const [apiKeys, setApiKeys] = useState([]);
@@ -20,7 +18,7 @@ const DeviceIngestion = () => {
   const fetchApiKeys = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/device/keys`);
+      const response = await axiosInstance.get('/device/keys');
       setApiKeys(response.data);
     } catch (error) {
       console.error('Failed to fetch API keys:', error);
@@ -36,7 +34,7 @@ const DeviceIngestion = () => {
     try {
       setCreating(true);
       setMessage('');
-      const response = await axios.post(`${API_BASE_URL}/api/device/keys`, {
+      const response = await axiosInstance.post('/device/keys', {
         name: newKeyName.trim()
       });
       setNewKey(response.data);
@@ -53,7 +51,7 @@ const DeviceIngestion = () => {
   const deleteApiKey = async (keyId) => {
     try {
       setDeleting(keyId);
-      await axios.delete(`${API_BASE_URL}/api/device/keys/${keyId}`);
+      await axiosInstance.delete(`/device/keys/${keyId}`);
       fetchApiKeys();
     } catch (error) {
       console.error('Failed to delete API key:', error);
@@ -176,7 +174,7 @@ const DeviceIngestion = () => {
           <div>
             <h3 className="text-lg font-medium text-text mb-2">1. Endpoint</h3>
             <div className="bg-surface p-4 rounded-lg font-mono text-sm">
-              POST {API_BASE_URL}/api/device/ingest
+              POST /api/device/ingest
             </div>
           </div>
 

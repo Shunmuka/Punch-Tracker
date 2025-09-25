@@ -83,9 +83,9 @@ def test_user_login(setup_database):
     })
     
     assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
+    assert "access_token" in response.cookies
+    assert "csrf_token" in response.cookies
+    assert "csrf_token" in response.json()
 
 def test_user_login_invalid_credentials(setup_database):
     """Test login with invalid credentials"""
@@ -107,15 +107,13 @@ def test_get_current_user(setup_database):
         "role": "coach"
     })
     
-    login_response = client.post("/auth/login", json={
+    client.post("/auth/login", json={
         "email": "profile@example.com",
         "password": "testpassword123"
     })
     
-    token = login_response.json()["access_token"]
-    
     # Get profile
-    response = client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+    response = client.get("/auth/me")
     
     assert response.status_code == 200
     data = response.json()
@@ -123,9 +121,40 @@ def test_get_current_user(setup_database):
     assert data["email"] == "profile@example.com"
     assert data["role"] == "coach"
 
-def test_get_current_user_invalid_token(setup_database):
-    """Test getting current user with invalid token"""
-    response = client.get("/auth/me", headers={"Authorization": "Bearer invalid_token"})
+def test_get_current_user_no_cookie(setup_database):
+    """Test getting current user with no cookie"""
+    # Clear any existing cookies in the client
+    client.cookies.clear()
+    response = client.get("/auth/me")
     
     assert response.status_code == 401
-    assert "Could not validate credentials" in response.json()["detail"]
+    assert "Not authenticated" in response.json()["detail"]
+
+def test_csrf_protection(setup_database):
+    """Test CSRF protection on a protected endpoint"""
+    # Create user and login
+    client.post("/auth/signup", json={
+        "username": "csrftest",
+        "email": "csrf@example.com",
+        "password": "testpassword123",
+        "role": "athlete"
+    })
+    
+    login_response = client.post("/auth/login", json={
+        "email": "csrf@example.com",
+        "password": "testpassword123"
+    })
+    
+    csrf_token = login_response.json()["csrf_token"]
+    
+    # Test with valid CSRF token
+    response = client.post("/auth/protected", headers={"X-CSRF-Token": csrf_token})
+    assert response.status_code == 200
+    
+    # Test with invalid CSRF token
+    response = client.post("/auth/protected", headers={"X-CSRF-Token": "invalid_token"})
+    assert response.status_code == 403
+    
+    # Test with no CSRF token
+    response = client.post("/auth/protected")
+    assert response.status_code == 403

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Cookie, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database import get_db
@@ -55,12 +55,32 @@ def verify_token(token: str) -> dict:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+def get_token_from_cookie(access_token: Optional[str] = Cookie(None)) -> Optional[str]:
+    """Get JWT token from cookie"""
+    return access_token
+
+async def verify_csrf_token(
+    csrf_token: Optional[str] = Cookie(None),
+    x_csrf_token: Optional[str] = Header(None, alias="X-CSRF-Token")
+):
+    """Verify CSRF token"""
+    if not csrf_token or not x_csrf_token or csrf_token != x_csrf_token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="CSRF token mismatch"
+        )
+
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    token: str = Depends(get_token_from_cookie),
     db: Session = Depends(get_db)
 ) -> User:
     """Get the current authenticated user"""
-    token = credentials.credentials
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     payload = verify_token(token)
     
     user_id: int = payload.get("sub")
@@ -79,6 +99,13 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    return user
+
+async def csrf_protected_user(
+    user: User = Depends(get_current_user),
+    _: None = Depends(verify_csrf_token)
+) -> User:
+    """Get current user with CSRF protection"""
     return user
 
 def get_current_athlete(

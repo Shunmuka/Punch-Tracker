@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
 const RecordingChip = ({ className = '' }) => {
   const [active, setActive] = useState(null);
@@ -49,7 +49,7 @@ const RecordingChip = ({ className = '' }) => {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await axios.get('/api/workouts/active', {
+        const response = await axiosInstance.get('/workouts/active', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -89,7 +89,7 @@ const RecordingChip = ({ className = '' }) => {
       const token = localStorage.getItem('token');
       console.log('Starting workout with token:', token ? 'present' : 'missing');
       
-      const res = await axios.post('/api/workouts/start', {}, {
+      const res = await axiosInstance.post('/workouts/start', {}, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -108,7 +108,7 @@ const RecordingChip = ({ className = '' }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.post('/api/workouts/stop', {}, {
+      const res = await axiosInstance.post('/workouts/stop', {}, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

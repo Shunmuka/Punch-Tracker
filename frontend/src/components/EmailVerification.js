@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-// Use relative paths to leverage the proxy
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import axiosInstance from '../utils/axios';
 
 const EmailVerification = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +21,7 @@ const EmailVerification = () => {
   const verifyEmail = async (token) => {
     try {
       setStatus('verifying');
-      await axios.post(`${API_BASE_URL}/auth/verify`, { token });
+      await axiosInstance.post('/auth/verify', { token });
       setStatus('success');
       setMessage('Email verified successfully! You can now receive notifications.');
       

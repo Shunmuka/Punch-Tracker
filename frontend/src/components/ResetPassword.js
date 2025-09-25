@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-
-// Use relative paths to leverage the proxy
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import axiosInstance from '../utils/axios';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -50,7 +47,7 @@ const ResetPassword = () => {
       setError('');
       setMessage('');
       
-      await axios.post(`${API_BASE_URL}/auth/reset`, {
+      await axiosInstance.post('/auth/reset', {
         token,
         new_password: password
       });

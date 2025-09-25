@@ -4,7 +4,7 @@ from sqlalchemy import func, and_, desc
 from database import get_db
 from models import User, CoachAthlete, Session, Punch
 from schemas import CoachInvite, CoachInviteResponse, CoachAcceptInvite, AthleteSummary, CoachAthletesResponse
-from auth import get_current_user, get_current_coach
+from auth import get_current_user, get_current_coach, csrf_protected_user
 from datetime import datetime, timedelta
 import secrets
 import string
@@ -18,7 +18,7 @@ def generate_invite_code() -> str:
 @router.post("/invite", response_model=CoachInviteResponse)
 async def invite_athlete(
     invite_data: CoachInvite,
-    current_user: User = Depends(get_current_coach),
+    current_user: User = Depends(csrf_protected_user),
     db: Session = Depends(get_db)
 ):
     """Create an invite code for an athlete"""
@@ -69,7 +69,7 @@ async def invite_athlete(
 @router.post("/accept")
 async def accept_invite(
     accept_data: CoachAcceptInvite,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(csrf_protected_user),
     db: Session = Depends(get_db)
 ):
     """Accept a coach invite (simplified for MVP)"""

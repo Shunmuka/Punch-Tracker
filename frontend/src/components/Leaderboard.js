@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 
 const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -16,7 +16,7 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/coach/leaderboard?range=week`);
+      const response = await axiosInstance.get('/coach/leaderboard?range=week');
       setLeaderboard(response.data.entries);
     } catch (error) {
       console.error('Failed to fetch leaderboard:', error);

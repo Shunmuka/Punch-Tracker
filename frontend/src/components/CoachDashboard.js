@@ -2,10 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Card from './ui/Card';
 import Metric from './ui/Metric';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 
-// Use relative paths to leverage the proxy
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 function CoachDashboard() {
   const { user } = useAuth();
@@ -20,7 +18,7 @@ function CoachDashboard() {
   const fetchAthletes = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/coach/athletes');
+      const response = await axiosInstance.get('/coach/athletes');
       setAthletes(response.data.athletes);
     } catch (err) {
       console.error('Failed to fetch athletes:', err);
@@ -32,7 +30,7 @@ function CoachDashboard() {
 
   const inviteAthlete = async (email) => {
     try {
-      await axios.post(`${API_BASE_URL}/api/coach/invite`, {
+      await axiosInstance.post('/coach/invite', {
         athlete_email: email
       });
       alert('Invite sent successfully!');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import Card from './ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -36,7 +36,7 @@ function PunchLogger() {
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/sessions?limit=50');
+      const response = await axiosInstance.get('/sessions?limit=50');
       setSessions(response.data.sessions);
       if (response.data.sessions.length > 0) {
         setPunchData(prev => ({
@@ -61,7 +61,7 @@ function PunchLogger() {
     if (!newSessionName.trim()) return;
     try {
       setCreatingSession(true);
-      const response = await axios.post('/api/sessions', {
+      const response = await axiosInstance.post('/sessions', {
         name: newSessionName.trim()
       });
       setSessions(prev => [response.data, ...prev]);
@@ -115,7 +115,7 @@ function PunchLogger() {
     setMessage('');
 
     try {
-      const response = await axios.post('/api/punches', {
+      const response = await axiosInstance.post('/punches', {
         ...punchData,
         speed: parsedSpeed,
         count: parsedCount
@@ -135,7 +135,9 @@ function PunchLogger() {
     } catch (error) {
       console.error('Error logging punch:', error);
       setMessage(`Error: ${error.response?.data?.detail || 'Failed to log punch'}`);
-    } finally {
+    }
+
+    finally {
       setIsSubmitting(false);
     }
   };

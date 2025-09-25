@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import Card from './ui/Card';
 import Metric from './ui/Metric';
 import { chartTheme } from './charts/Theme';
@@ -20,9 +20,32 @@ function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
-    fetchSessions();
+    const init = async () => {
+      setLoading(true);
+      try {
+        const sessionsResponse = await axiosInstance.get('/sessions?limit=20');
+        const fetchedSessions = sessionsResponse.data.sessions;
+        setSessions(fetchedSessions);
+        if (fetchedSessions.length > 0) {
+          const currentSessionId = fetchedSessions[0].id;
+          setSessionId(currentSessionId);
+          const analyticsResponse = await axiosInstance.get(`/analytics/${currentSessionId}`);
+          setAnalytics(analyticsResponse.data);
+        } else {
+          setAnalytics(null);
+        }
+        setError('');
+      } catch (err) {
+        console.error('Error initializing dashboard:', err);
+        setError(`Error: ${err.response?.data?.detail || 'Failed to load initial data'}`);
+      }
+ finally {
+        setLoading(false);
+      }
+    };
+
+    init();
     fetchWeeklyAnalytics();
-    fetchAnalytics();
     
     // Refresh weekly analytics every 30 seconds
     const interval = setInterval(() => {
@@ -34,7 +57,7 @@ function Dashboard() {
 
   const fetchSessions = async () => {
     try {
-      const response = await axios.get('/api/sessions?limit=20');
+      const response = await axiosInstance.get('/sessions?limit=20');
       setSessions(response.data.sessions);
     } catch (err) {
       console.error('Failed to fetch sessions:', err);
@@ -44,12 +67,13 @@ function Dashboard() {
   const fetchWeeklyAnalytics = async () => {
     setWeeklyLoading(true);
     try {
-      const response = await axios.get('/api/analytics/weekly');
+      const response = await axiosInstance.get('/analytics/weekly');
       setWeeklyAnalytics(response.data);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Failed to fetch weekly analytics:', err);
-    } finally {
+    }
+ finally {
       setWeeklyLoading(false);
     }
   };
@@ -57,13 +81,14 @@ function Dashboard() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`/api/analytics/${sessionId}`);
+      const response = await axiosInstance.get(`/analytics/${sessionId}`);
       setAnalytics(response.data);
       setError('');
     } catch (err) {
       console.error('Error fetching analytics:', err);
       setError(`Error: ${err.response?.data?.detail || 'Failed to load analytics'}`);
-    } finally {
+    }
+ finally {
       setLoading(false);
     }
   };

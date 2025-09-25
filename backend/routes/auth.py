@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
 from models import User, NotificationPrefs
 from schemas import UserSignup, UserLogin, Token, UserProfile
-from auth import verify_password, get_password_hash, create_access_token, get_current_user
+from auth import verify_password, get_password_hash, create_access_token, get_current_user, csrf_protected_user
 from datetime import timedelta
 import os
+import secrets
 
 router = APIRouter()
 
@@ -37,7 +38,7 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
         username=user_data.username,
         email=user_data.email,
         password_hash=hashed_password,
-        role=user_data.role
+        role=user_data.role.value
     )
     
     db.add(user)
@@ -55,9 +56,9 @@ async def signup(user_data: UserSignup, db: Session = Depends(get_db)):
     
     return user
 
-@router.post("/login", response_model=Token)
-async def login(login_data: UserLogin, db: Session = Depends(get_db)):
-    """Authenticate user and return JWT token"""
+@router.post("/login")
+async def login(login_data: UserLogin, response: Response, db: Session = Depends(get_db)):
+    """Authenticate user and return JWT token in an HttpOnly cookie"""
     
     # Find user by email
     user = db.query(User).filter(User.email == login_data.email).first()
@@ -75,7 +76,33 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
         data={"sub": str(user.id)}, expires_delta=access_token_expires
     )
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Generate CSRF token
+    csrf_token = secrets.token_hex(16)
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=True,  # Set to True in production
+        samesite="strict",
+    )
+    
+    response.set_cookie(
+        key="csrf_token",
+        value=csrf_token,
+        httponly=False,
+        secure=True, # Set to True in production
+        samesite="strict",
+    )
+    
+    return {"message": "Login successful", "csrf_token": csrf_token}
+
+@router.post("/logout")
+async def logout(response: Response):
+    """Logout user by clearing the access token cookie"""
+    response.delete_cookie("access_token")
+    response.delete_cookie("csrf_token")
+    return {"message": "Logout successful"}
 
 @router.get("/me", response_model=UserProfile)
 async def get_current_user_profile(current_user: User = Depends(get_current_user)):

@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
-
-// Use relative paths to leverage the proxy
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import axiosInstance from '../utils/axios';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +21,7 @@ const ForgotPassword = () => {
       setError('');
       setMessage('');
       
-      await axios.post(`${API_BASE_URL}/auth/forgot`, { email });
+      await axiosInstance.post('/auth/forgot', { email });
       setMessage('If the email exists, a password reset link has been sent to your inbox.');
     } catch (err) {
       console.error('Forgot password error:', err);

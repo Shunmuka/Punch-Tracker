@@ -124,15 +124,7 @@ class AuthFlowService:
         </html>
         """
         
-        return self.notification_service.send_email_report(user, type('ReportData', (), {
-            'total_punches': 0,
-            'avg_speed': 0,
-            'workouts_count': 0,
-            'best_session_punches': 0,
-            'change_percent': 0,
-            'week_start': datetime.utcnow(),
-            'week_end': datetime.utcnow()
-        })())
+        return self.notification_service.send_email(user.email, subject, html_content)
 
     def send_password_reset_email(self, db: Session, user: User) -> bool:
         """Send password reset email"""
@@ -158,15 +150,7 @@ class AuthFlowService:
         </html>
         """
         
-        return self.notification_service.send_email_report(user, type('ReportData', (), {
-            'total_punches': 0,
-            'avg_speed': 0,
-            'workouts_count': 0,
-            'best_session_punches': 0,
-            'change_percent': 0,
-            'week_start': datetime.utcnow(),
-            'week_end': datetime.utcnow()
-        })())
+        return self.notification_service.send_email(user.email, subject, html_content)
 
     def _hash_token(self, token: str) -> str:
         """Hash a token for storage"""
